@@ -1,0 +1,3252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NKTI BIOMED MedTracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap');
+
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #f7fafc;
+    --border: #e2e8f0;
+    --accent: #0ea5e9;
+    --accent2: #06b6d4;
+    --accent3: #10b981;
+    --danger: #ef4444;
+    --warn: #f59e0b;
+    --text: #0f172a;
+    --text2: #475569;
+    --text3: #94a3b8;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 1px 0 var(--border), var(--shadow);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .logo-icon {
+    width: 36px;
+    height: 36px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 18px;
+  }
+
+  .logo-text {
+    font-family: 'Space Mono', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: var(--text);
+  }
+
+  .logo-text span { color: var(--accent); }
+
+  .header-meta {
+    font-size: 13px;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+
+  .save-indicator {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .save-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--accent3);
+    animation: pulse-dot 2s infinite;
+  }
+
+  @keyframes pulse-dot {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(0.8); }
+  }
+
+  .save-dot.unsaved { background: var(--warn); animation: none; }
+
+  .hdr-btn {
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.15s;
+  }
+
+  .hdr-btn:hover { border-color: var(--accent); color: var(--accent); background: #e0f2fe; }
+  .hdr-btn.green { border-color: var(--accent3); color: var(--accent3); }
+  .hdr-btn.green:hover { background: #dcfce7; }
+
+  /* LAYOUT */
+  .container {
+    max-width: 1440px;
+    margin: 0 auto;
+    padding: 28px 32px;
+  }
+
+  /* STATS ROW */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 4px;
+  }
+
+  .stat-dot {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+
+  /* CHARTS SECTION */
+  .charts-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 28px;
+  }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 24px 20px;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  .chart-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .chart-sub {
+    font-size: 12px;
+    color: var(--text3);
+    margin-top: 2px;
+  }
+
+  .area-filter-group {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .area-btn {
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .area-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .area-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .chart-canvas-wrap {
+    position: relative;
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+  }
+
+  .chart-canvas-wrap canvas {
+    display: block;
+    width: 100% !important;
+  }
+
+  /* TABLE SECTION */
+  .table-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+  }
+
+  .table-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .table-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .toolbar-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .search-wrap {
+    position: relative;
+  }
+
+  .search-wrap input {
+    padding: 8px 12px 8px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    width: 220px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .search-wrap input:focus { border-color: var(--accent); }
+
+  .search-icon {
+    position: absolute;
+    left: 11px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text3);
+    font-size: 14px;
+  }
+
+  .filter-select {
+    padding: 8px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+
+  .filter-select:focus { border-color: var(--accent); }
+
+  .add-btn {
+    padding: 8px 18px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .add-btn:hover { background: #0284c7; transform: translateY(-1px); }
+
+  /* TABLE */
+  .table-wrap {
+    overflow-x: auto;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+
+  thead th {
+    background: var(--surface2);
+    padding: 11px 16px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+    cursor: pointer;
+    user-select: none;
+    transition: color 0.15s;
+  }
+
+  thead th:hover { color: var(--accent); }
+
+  thead th .sort-icon { margin-left: 4px; opacity: 0.5; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: #f8fafc; }
+
+  td {
+    padding: 13px 16px;
+    color: var(--text);
+    vertical-align: middle;
+    white-space: nowrap;
+  }
+
+  .eq-name {
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  .eq-brand {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+  }
+
+  .serial {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .badge-active { background: #dcfce7; color: #16a34a; }
+  .badge-maintenance { background: #fef9c3; color: #a16207; }
+  .badge-inactive { background: #fee2e2; color: #dc2626; }
+  .badge-condemned { background: #f1f5f9; color: #64748b; }
+
+  .area-tag {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #e0f2fe;
+    color: #0369a1;
+  }
+
+  .cat-tag {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+    letter-spacing: 0.2px;
+  }
+  .cat-inhouse   { background: #dbeafe; color: #1d4ed8; }
+  .cat-direct    { background: #fce7f3; color: #9d174d; }
+  .cat-warranty  { background: #d1fae5; color: #065f46; }
+  .cat-tieup     { background: #fef3c7; color: #92400e; }
+
+  .bldg-tag {
+    display: inline-block;
+    padding: 3px 9px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .bldg-main   { background: #ede9fe; color: #5b21b6; }
+  .bldg-annex1 { background: #ffedd5; color: #c2410c; }
+  .bldg-annex2 { background: #cffafe; color: #0e7490; }
+  .bldg-diag   { background: #f0fdf4; color: #15803d; }
+
+  .consumption-cell {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .cons-bar-wrap {
+    width: 60px;
+    height: 5px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    display: inline-block;
+    vertical-align: middle;
+  }
+  .cons-bar { height: 100%; border-radius: 3px; background: var(--accent); }
+
+  .actions { display: flex; gap: 6px; }
+
+  .icon-btn {
+    width: 28px; height: 28px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    color: var(--text3);
+    transition: all 0.15s;
+  }
+
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); background: #e0f2fe; }
+  .icon-btn.del:hover { border-color: var(--danger); color: var(--danger); background: #fee2e2; }
+
+  /* PAGINATION */
+  .pagination {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface2);
+  }
+
+  .page-info { font-size: 12px; color: var(--text3); }
+
+  .page-btns { display: flex; gap: 4px; }
+
+  .page-btn {
+    width: 30px; height: 30px;
+    border: 1.5px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    transition: all 0.15s;
+  }
+
+  .page-btn:hover, .page-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15,23,42,0.45);
+    z-index: 999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s;
+    backdrop-filter: blur(2px);
+  }
+
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .modal {
+    background: var(--surface);
+    border-radius: 16px;
+    width: 640px;
+    max-width: 95vw;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.2s;
+  }
+
+  .modal-overlay.open .modal {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-header {
+    padding: 24px 28px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .modal-title {
+    font-size: 17px;
+    font-weight: 700;
+  }
+
+  .modal-close {
+    width: 32px; height: 32px;
+    border: none;
+    background: var(--surface2);
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s;
+  }
+
+  .modal-close:hover { background: var(--border); }
+
+  .modal-body { padding: 24px 28px; }
+
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1/-1; }
+
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+  }
+
+  .form-input, .form-select {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    background: var(--surface2);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .form-input:focus, .form-select:focus { border-color: var(--accent); background: white; }
+
+  .modal-footer {
+    padding: 18px 28px 24px;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    border-top: 1px solid var(--border);
+  }
+
+  .btn-cancel {
+    padding: 9px 20px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: transparent;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-cancel:hover { background: var(--surface2); }
+
+  .btn-save {
+    padding: 9px 24px;
+    border: none;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+
+  .btn-save:hover { background: #0284c7; }
+
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: #0f172a;
+    color: white;
+    padding: 12px 20px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 500;
+    z-index: 9999;
+    transform: translateY(60px);
+    opacity: 0;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .toast.show { transform: translateY(0); opacity: 1; }
+
+  /* WATTAGE SECTION */
+  .wattage-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 24px;
+  }
+
+  .wattage-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 28px 18px;
+    border-bottom: 2px solid var(--border);
+    background: linear-gradient(90deg, #fefce8, #fff7ed);
+    flex-wrap: wrap;
+    gap: 14px;
+  }
+
+  .wattage-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #92400e;
+  }
+
+  .wattage-sub {
+    font-size: 11px;
+    color: #b45309;
+    margin-top: 3px;
+    font-family: 'Space Mono', monospace;
+  }
+
+  .rate-control {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .rate-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #92400e;
+  }
+
+  .rate-input {
+    width: 90px;
+    padding: 7px 10px;
+    border: 2px solid #f59e0b;
+    border-radius: var(--radius-sm);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    color: #92400e;
+    background: #fffbeb;
+    outline: none;
+    text-align: center;
+    transition: border-color 0.15s;
+  }
+
+  .rate-input:focus { border-color: #d97706; }
+
+  .rate-note {
+    font-size: 11px;
+    color: #b45309;
+    font-style: italic;
+  }
+
+  .wtable-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+  }
+
+  .wtable-card {
+    padding: 20px 24px 24px;
+    border-right: 1px solid var(--border);
+  }
+
+  .wtable-card:last-child { border-right: none; }
+
+  .wtable-title {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 14px;
+  }
+
+  .wtable-wrap { overflow-x: auto; }
+
+  .wtable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+
+  .wtable thead th {
+    background: var(--surface2);
+    padding: 8px 12px;
+    text-align: left;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text3);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .wtable tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+
+  .wtable tbody tr:last-child { border-bottom: none; }
+  .wtable tbody tr:hover { background: #fffbeb; }
+
+  .wtable td {
+    padding: 9px 12px;
+    color: var(--text);
+    white-space: nowrap;
+  }
+
+  .wtable td:first-child { font-weight: 600; }
+
+  .wtable td.num {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    text-align: right;
+  }
+
+  .wtable td.cost {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: right;
+    color: #16a34a;
+  }
+
+  .wtable tfoot td {
+    padding: 10px 12px;
+    font-weight: 700;
+    font-size: 12px;
+    border-top: 2px solid var(--border);
+    background: #f0fdf4;
+    font-family: 'Space Mono', monospace;
+    text-align: right;
+    color: #15803d;
+  }
+
+  .wtable tfoot td:first-child {
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--text);
+    font-size: 12px;
+  }
+
+  .watt-badge {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+  }
+
+  @media (max-width: 900px) {
+    .wtable-grid { grid-template-columns: 1fr; }
+    .wtable-card { border-right: none; border-bottom: 1px solid var(--border); }
+  }
+
+  .hdr-btn.excel { border-color: #16a34a; color: #16a34a; }
+  .hdr-btn.excel:hover { background: #dcfce7; }
+  .hdr-btn.upload { border-color: #7c3aed; color: #7c3aed; }
+  .hdr-btn.upload:hover { background: #ede9fe; }
+
+  /* EXCEL DROP ZONE */
+  .drop-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(124,58,237,0.12);
+    border: 4px dashed #7c3aed;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .drop-overlay.active { opacity: 1; pointer-events: all; }
+  .drop-inner {
+    background: white;
+    border-radius: 20px;
+    padding: 40px 60px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
+  }
+  .drop-icon { font-size: 52px; margin-bottom: 12px; }
+  .drop-text { font-size: 22px; font-weight: 700; color: #7c3aed; }
+  .drop-sub  { font-size: 13px; color: var(--text3); margin-top: 6px; }
+
+  /* IMPORT PREVIEW MODAL */
+  .preview-modal {
+    background: var(--surface);
+    border-radius: 16px;
+    width: 820px;
+    max-width: 96vw;
+    max-height: 88vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.18);
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.2s;
+  }
+  .modal-overlay.open .preview-modal { transform: translateY(0) scale(1); }
+  .preview-table-wrap { overflow-x: auto; max-height: 380px; padding: 0 24px 20px; }
+  .preview-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .preview-table th { background: var(--surface2); padding: 8px 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--text3); border-bottom: 1px solid var(--border); white-space: nowrap; }
+  .preview-table td { padding: 7px 10px; border-bottom: 1px solid var(--border); color: var(--text2); white-space: nowrap; }
+  .preview-table tr:hover td { background: #f8fafc; }
+  .preview-info { padding: 12px 24px; background: #f0fdf4; border-top: 1px solid var(--border); font-size: 13px; color: #16a34a; font-weight: 600; }
+  .preview-warn { background: #fefce8; color: #92400e; }
+  .col-map-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; padding: 20px 24px; border-bottom: 1px solid var(--border); }
+  .col-map-item { display: flex; flex-direction: column; gap: 4px; }
+  .col-map-label { font-size: 11px; font-weight: 700; color: var(--text3); text-transform: uppercase; }
+  .col-map-select { padding: 6px 10px; border: 1.5px solid var(--border); border-radius: 6px; font-size: 12px; font-family: 'DM Sans',sans-serif; background: var(--surface2); }
+
+  @media (max-width: 1100px) {
+    .charts-section { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 900px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .charts-section { grid-template-columns: 1fr; }
+    .container { padding: 16px; }
+    .form-grid { grid-template-columns: 1fr; }
+    .col-map-grid { grid-template-columns: 1fr 1fr; }
+  }
+
+  /* ══════════════════════════════════════════
+     AUTH SYSTEM
+  ══════════════════════════════════════════ */
+  #authScreen {
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 50%, #0e7490 100%);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 99999; transition: opacity 0.4s;
+  }
+  #authScreen.hidden { opacity:0; pointer-events:none; }
+
+  .auth-card {
+    background: white;
+    border-radius: 20px;
+    width: 420px; max-width: 95vw;
+    box-shadow: 0 32px 80px rgba(0,0,0,0.35);
+    overflow: hidden;
+    animation: slideUp 0.4s cubic-bezier(0.34,1.56,0.64,1);
+  }
+  @keyframes slideUp { from { transform:translateY(40px) scale(0.95); opacity:0; } to { transform:translateY(0) scale(1); opacity:1; } }
+
+  .auth-top {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    padding: 32px 36px 28px;
+    text-align: center;
+    color: white;
+  }
+  .auth-logo { font-size: 40px; margin-bottom: 8px; }
+  .auth-appname { font-family:'Space Mono',monospace; font-size:22px; font-weight:700; letter-spacing:-0.5px; }
+  .auth-appname span { color: rgba(255,255,255,0.7); }
+  .auth-tagline { font-size:12px; opacity:0.8; margin-top:4px; }
+
+  .auth-body { padding: 28px 36px 32px; }
+  .auth-title { font-size:18px; font-weight:700; color:var(--text); margin-bottom:20px; }
+
+  .auth-field { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+  .auth-label { font-size:11px; font-weight:700; color:var(--text2); text-transform:uppercase; letter-spacing:0.6px; }
+  .auth-input {
+    padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+    font-family:'DM Sans',sans-serif; font-size:14px; color:var(--text);
+    background:var(--surface2); outline:none; transition:border-color 0.15s;
+  }
+  .auth-input:focus { border-color:var(--accent); background:white; }
+
+  .auth-btn {
+    width:100%; padding:12px; border:none; border-radius:var(--radius-sm);
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color:white; font-family:'DM Sans',sans-serif; font-size:15px;
+    font-weight:700; cursor:pointer; transition:opacity 0.15s, transform 0.1s;
+    margin-top:8px;
+  }
+  .auth-btn:hover { opacity:0.92; transform:translateY(-1px); }
+  .auth-error { color:var(--danger); font-size:12px; text-align:center; margin-top:10px; min-height:18px; }
+  .auth-footer { font-size:11px; color:var(--text3); text-align:center; margin-top:14px; }
+
+  /* ROLE BADGE in header */
+  .role-badge {
+    display:inline-flex; align-items:center; gap:6px;
+    padding:4px 12px; border-radius:20px;
+    font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.5px;
+  }
+  .role-admin    { background:#fef3c7; color:#92400e; }
+  .role-engineer { background:#dbeafe; color:#1d4ed8; }
+  .role-viewer   { background:#f1f5f9; color:#64748b; }
+  .user-info-hdr { display:flex; align-items:center; gap:8px; }
+  .user-name-hdr { font-size:13px; font-weight:600; color:var(--text2); }
+
+  .logout-btn {
+    padding:5px 12px; border:1.5px solid var(--border); border-radius:6px;
+    background:transparent; font-family:'DM Sans',sans-serif; font-size:12px;
+    font-weight:600; color:var(--text2); cursor:pointer; transition:all 0.15s;
+  }
+  .logout-btn:hover { border-color:var(--danger); color:var(--danger); background:#fee2e2; }
+
+  /* USER MANAGEMENT MODAL */
+  .user-mgmt-modal {
+    background:var(--surface); border-radius:16px;
+    width:700px; max-width:96vw; max-height:88vh; overflow-y:auto;
+    box-shadow:0 24px 64px rgba(0,0,0,0.18);
+    transform:translateY(20px) scale(0.97); transition:transform 0.2s;
+  }
+  .modal-overlay.open .user-mgmt-modal { transform:translateY(0) scale(1); }
+
+  .user-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .user-table th { background:var(--surface2); padding:10px 16px; text-align:left; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.6px; color:var(--text3); border-bottom:1px solid var(--border); }
+  .user-table td { padding:12px 16px; border-bottom:1px solid var(--border); color:var(--text); }
+  .user-table tr:last-child td { border-bottom:none; }
+  .user-table tr:hover td { background:var(--surface2); }
+
+  .role-sel { padding:5px 10px; border:1.5px solid var(--border); border-radius:6px; font-size:12px; font-family:'DM Sans',sans-serif; background:var(--surface2); cursor:pointer; }
+
+  /* Viewer location row highlight */
+  tr.my-location-row td { background: #f0fdf4 !important; }
+  tr.my-location-row td:first-child { border-left: 3px solid #22c55e; }
+  tr.locked-row td { opacity: 0.75; }
+
+  .no-access-banner {
+    display:none; background:#fee2e2; border:1.5px solid #fca5a5;
+    border-radius:var(--radius-sm); padding:10px 16px;
+    font-size:13px; color:#dc2626; font-weight:500; margin-bottom:12px;
+    align-items:center; gap:8px;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     LOGIN SCREEN
+═══════════════════════════════════════ -->
+<div id="authScreen">
+  <div class="auth-card">
+    <div class="auth-top">
+      <div class="auth-logo">⚕</div>
+      <div class="auth-appname">NKTI BIOMED <span>MedTracker</span></div>
+      <div class="auth-tagline">Biomedical Equipment Inventory & Monitoring System</div>
+    </div>
+    <div class="auth-body">
+      <div class="auth-title">Sign in to continue</div>
+      <div class="auth-field">
+        <label class="auth-label">Username</label>
+        <input class="auth-input" id="loginUser" placeholder="Enter username" autocomplete="username">
+      </div>
+      <div class="auth-field">
+        <label class="auth-label">Password</label>
+        <input class="auth-input" id="loginPass" type="password" placeholder="Enter password" autocomplete="current-password">
+      </div>
+      <button class="auth-btn" onclick="doLogin()">Sign In</button>
+      <div class="auth-error" id="loginError"></div>
+      <div class="auth-footer">Default admin: <strong>admin</strong> / <strong>admin123</strong></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     USER MANAGEMENT MODAL
+═══════════════════════════════════════ -->
+<div class="modal-overlay" id="userMgmtOverlay">
+  <div class="user-mgmt-modal">
+    <div class="modal-header">
+      <div class="modal-title">👥 User Management</div>
+      <button class="modal-close" onclick="closeUserMgmt()">✕</button>
+    </div>
+
+    <!-- Add user form -->
+    <div style="padding:20px 24px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:14px">Add New User</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:12px">
+        <div class="form-group">
+          <label class="form-label">Username</label>
+          <input class="form-input" id="nu_user" placeholder="e.g. jdelacruz">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" id="nu_pass" type="password" placeholder="Min. 6 characters">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-select" id="nu_role" onchange="toggleLocationFields()">
+            <option value="viewer">Viewer</option>
+            <option value="engineer">Engineer</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+      </div>
+      <!-- Location assignment — only shown for Viewer -->
+      <div id="nu_location_row" style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:12px;align-items:end;padding-top:12px;border-top:1px dashed var(--border)">
+        <div class="form-group">
+          <label class="form-label" style="color:#7c3aed">📍 Assigned Building <span style="color:var(--text3);font-weight:400">(Viewer only)</span></label>
+          <select class="form-select" id="nu_building">
+            <option value="">— All Buildings —</option>
+            <option>MAIN BUILDING</option>
+            <option>ANNEX I BUILDING</option>
+            <option>ANNEX II BUILDING</option>
+            <option>DIAGNOSTIC BUILDING</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" style="color:#7c3aed">📍 Assigned Section <span style="color:var(--text3);font-weight:400">(optional)</span></label>
+          <input class="form-input" id="nu_section" placeholder="e.g. ICU-A (leave blank = all sections in building)">
+        </div>
+        <div style="grid-column:span 1"></div>
+        <button class="add-btn" onclick="addUser()" style="height:38px;white-space:nowrap">+ Add User</button>
+      </div>
+      <div id="nu_nolocation_row" style="display:none;text-align:right;padding-top:8px">
+        <button class="add-btn" onclick="addUser()" style="height:38px;white-space:nowrap">+ Add User</button>
+      </div>
+    </div>
+
+    <!-- Users table -->
+    <div style="padding:0 24px 8px;overflow-x:auto">
+      <table class="user-table" id="usersTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Assigned Location</th>
+            <th>Permissions</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="usersBody"></tbody>
+      </table>
+    </div>
+
+    <div style="padding:16px 24px;border-top:1px solid var(--border);background:var(--surface2);font-size:12px;color:var(--text3)">
+      <strong>Roles:</strong> &nbsp;
+      <span class="role-badge role-admin">Admin</span> Full access + user management &nbsp;|&nbsp;
+      <span class="role-badge role-engineer">Engineer</span> View + add/edit/delete all equipment &nbsp;|&nbsp;
+      <span class="role-badge role-viewer">Viewer</span> View all · Edit &amp; Upload Excel for their assigned building/section only
+    </div>
+  </div>
+</div>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚕</div>
+    <div class="logo-text">NKTI BIOMED <span>MedTracker</span></div>
+  </div>
+  <div class="header-right" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+    <div class="save-indicator">
+      <div class="save-dot" id="saveDot"></div>
+      <span id="saveLabel">Saved</span>
+    </div>
+    <span id="hdrEngButtons" style="display:none;gap:8px;align-items:center">
+      <button class="hdr-btn excel" onclick="exportExcel()">⬇ Excel</button>
+      <button class="hdr-btn green" onclick="exportCSV()">⬇ CSV</button>
+      <button class="hdr-btn" onclick="exportJSON()">⬇ Backup</button>
+      <label class="hdr-btn upload" style="cursor:pointer">
+        ⬆ Upload Excel <input type="file" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event)" style="display:none">
+      </label>
+      <label class="hdr-btn" style="cursor:pointer">
+        ⬆ Restore JSON <input type="file" accept=".json" onchange="importJSON(event)" style="display:none">
+      </label>
+    </span>
+    <span id="hdrViewerButtons" style="display:none;gap:8px;align-items:center">
+      <button class="hdr-btn excel" onclick="exportExcel()">⬇ Excel</button>
+      <button class="hdr-btn green" onclick="exportCSV()">⬇ CSV</button>
+      <label class="hdr-btn upload" style="cursor:pointer" title="Upload Excel — limited to your assigned location">
+        ⬆ Upload Excel <input type="file" accept=".xlsx,.xls,.csv" onchange="handleExcelUpload(event)" style="display:none">
+      </label>
+    </span>
+    <button class="hdr-btn" id="userMgmtBtn" style="display:none" onclick="openUserMgmt()">👥 Users</button>
+    <div class="user-info-hdr">
+      <span class="role-badge" id="roleBadge"></span>
+      <span class="user-name-hdr" id="currentUserName"></span>
+    </div>
+    <button class="logout-btn" onclick="doLogout()">Sign Out</button>
+    <div class="header-meta" id="datetime"></div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- STATS -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- CHARTS -->
+  <div class="charts-section">
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Equipment by Area</div>
+          <div class="chart-sub">Total units per department</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:320px;padding-top:28px"><canvas id="areaChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Brand Distribution</div>
+          <div class="chart-sub" id="brandSubtitle">All areas · by brand</div>
+        </div>
+        <div class="area-filter-group" id="areaFilters"></div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:400px"><canvas id="brandChart"></canvas></div>
+    </div>
+
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Equipment per Area — by Type</div>
+          <div class="chart-sub">Stacked breakdown of equipment categories per area</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:380px;padding-top:28px"><canvas id="stackedChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Category Distribution</div>
+          <div class="chart-sub">Equipment by service category</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:400px"><canvas id="categoryChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Building Location</div>
+          <div class="chart-sub">Equipment count per building</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:320px;padding-top:40px"><canvas id="buildingChart"></canvas></div>
+    </div>
+
+    <div class="chart-card full-width">
+      <div class="chart-header">
+        <div>
+          <div class="chart-title">Monthly Wattage Consumption</div>
+          <div class="chart-sub">kWh per section and building — top consumers</div>
+        </div>
+      </div>
+      <div class="chart-canvas-wrap" style="height:420px"><canvas id="consumptionChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- WATTAGE COST SECTION -->
+  <div class="wattage-section" id="wattageSection">
+    <div class="wattage-header">
+      <div>
+        <div class="wattage-title">⚡ Monthly Electricity Cost Calculator</div>
+        <div class="wattage-sub">Wattage × Hours/day × 30 days ÷ 1000 = kWh &nbsp;|&nbsp; kWh × Rate = Cost (₱)</div>
+      </div>
+      <div class="rate-control">
+        <label class="rate-label">₱ / kWh Rate:</label>
+        <input type="number" id="kwhrRate" value="12.00" step="0.01" min="0" class="rate-input" oninput="renderWattageTables()">
+        <span class="rate-note">Meralco avg ≈ ₱11–13/kWh</span>
+      </div>
+    </div>
+
+    <div class="wtable-grid">
+      <!-- BY SECTION -->
+      <div class="wtable-card">
+        <div class="wtable-title">📍 By Section</div>
+        <div class="wtable-wrap">
+          <table class="wtable">
+            <thead>
+              <tr>
+                <th>Section</th>
+                <th>Equipment</th>
+                <th>Total Wattage</th>
+                <th>Total kWh/mo</th>
+                <th>Est. Cost/mo</th>
+              </tr>
+            </thead>
+            <tbody id="sectionWattBody"></tbody>
+            <tfoot id="sectionWattFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- BY BUILDING -->
+      <div class="wtable-card">
+        <div class="wtable-title">🏢 By Building Location</div>
+        <div class="wtable-wrap">
+          <table class="wtable">
+            <thead>
+              <tr>
+                <th>Building</th>
+                <th>Equipment</th>
+                <th>Total Wattage</th>
+                <th>Total kWh/mo</th>
+                <th>Est. Cost/mo</th>
+              </tr>
+            </thead>
+            <tbody id="buildingWattBody"></tbody>
+            <tfoot id="buildingWattFoot"></tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WATTAGE COST SECTION -->
+  <div class="wattage-section" id="wattageSection">
+  <div class="table-section">
+    <div class="table-toolbar">
+      <div class="table-title">Equipment Registry &nbsp;<span style="color:var(--text3);font-weight:400;font-size:13px" id="tableCount"></span></div>
+      <div class="toolbar-right">
+        <div class="search-wrap">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchInput" placeholder="Search equipment…">
+        </div>
+        <select class="filter-select" id="filterArea">
+          <option value="">All Areas</option>
+        </select>
+        <select class="filter-select" id="filterStatus">
+          <option value="">All Status</option>
+          <option>Active</option>
+          <option>Maintenance</option>
+          <option>Inactive</option>
+          <option>Condemned</option>
+        </select>
+        <select class="filter-select" id="filterCategory">
+          <option value="">All Categories</option>
+          <option>NKTI-INHOUSE</option>
+          <option>OUTSOURCE-DIRECT CONTRACTING</option>
+          <option>OUTSOURCE-UNDERWARRANTY</option>
+          <option>OUTSOURCE-TIEUP</option>
+        </select>
+        <select class="filter-select" id="filterBuilding">
+          <option value="">All Buildings</option>
+          <option>MAIN BUILDING</option>
+          <option>ANNEX I BUILDING</option>
+          <option>ANNEX II BUILDING</option>
+          <option>DIAGNOSTIC BUILDING</option>
+        </select>
+        <button class="add-btn" id="addEquipBtn" onclick="openModal()" style="display:none">＋ Add Equipment</button>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th onclick="sortTable('name')">Equipment Name <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('brand')">Brand <span class="sort-icon">↕</span></th>
+            <th>Model</th>
+            <th>Serial No.</th>
+            <th onclick="sortTable('date')">Date Acquired <span class="sort-icon">↕</span></th>
+            <th>Section</th>
+            <th>Status</th>
+            <th>Supplier</th>
+            <th onclick="sortTable('area')">Area <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('category')">Category <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('building')">Building Location <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('wattage')">Wattage (W) <span class="sort-icon">↕</span></th>
+            <th onclick="sortTable('hours')">Hrs/Day <span class="sort-icon">↕</span></th>
+            <th>kWh/mo</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+
+    <div class="pagination">
+      <div class="page-info" id="pageInfo"></div>
+      <div class="page-btns" id="pageBtns"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Add Equipment</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group full">
+          <label class="form-label">Equipment Name</label>
+          <input class="form-input" id="f_name" placeholder="e.g. Patient Monitor">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Brand</label>
+          <input class="form-input" id="f_brand" placeholder="e.g. Philips">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Model</label>
+          <input class="form-input" id="f_model" placeholder="e.g. IntelliVue MX40">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Serial No.</label>
+          <input class="form-input" id="f_serial" placeholder="e.g. SN-2024-00123">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date Acquired</label>
+          <input class="form-input" id="f_date" type="date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Section</label>
+          <input class="form-input" id="f_section" placeholder="e.g. Ward 3B">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="f_status">
+            <option>Active</option>
+            <option>Maintenance</option>
+            <option>Inactive</option>
+            <option>Condemned</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Supplier</label>
+          <input class="form-input" id="f_supplier" placeholder="e.g. MedSupply Inc.">
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Area</label>
+          <select class="form-select" id="f_area">
+            <option>ICU</option>
+            <option>Emergency Room</option>
+            <option>Operating Room</option>
+            <option>Radiology</option>
+            <option>Laboratory</option>
+            <option>Cardiology</option>
+            <option>Pediatrics</option>
+            <option>Orthopedics</option>
+          </select>
+        </div>
+        <div class="form-group full">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="f_category">
+            <option>NKTI-INHOUSE</option>
+            <option>OUTSOURCE-DIRECT CONTRACTING</option>
+            <option>OUTSOURCE-UNDERWARRANTY</option>
+            <option>OUTSOURCE-TIEUP</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Building Location</label>
+          <select class="form-select" id="f_building">
+            <option>MAIN BUILDING</option>
+            <option>ANNEX I BUILDING</option>
+            <option>ANNEX II BUILDING</option>
+            <option>DIAGNOSTIC BUILDING</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Wattage (W)</label>
+          <input class="form-input" id="f_wattage" type="number" min="0" placeholder="e.g. 500">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Daily Hours Used (hrs/day)</label>
+          <input class="form-input" id="f_hours" type="number" min="0" max="24" step="0.5" placeholder="e.g. 8">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-save" onclick="saveEquipment()">Save Equipment</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- DRAG AND DROP OVERLAY -->
+<div class="drop-overlay" id="dropOverlay">
+  <div class="drop-inner">
+    <div class="drop-icon">📊</div>
+    <div class="drop-text">Drop your Excel / CSV file here</div>
+    <div class="drop-sub">.xlsx · .xls · .csv supported</div>
+  </div>
+</div>
+
+<!-- IMPORT PREVIEW MODAL -->
+<div class="modal-overlay" id="importModalOverlay">
+  <div class="preview-modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="importModalTitle">Import from Excel</div>
+        <div style="font-size:12px;color:var(--text3);margin-top:3px" id="importFileInfo"></div>
+      </div>
+      <button class="modal-close" onclick="closeImportModal()">✕</button>
+    </div>
+    <!-- Column mapping -->
+    <div style="padding:16px 24px 12px;border-bottom:1px solid var(--border);background:var(--surface2)">
+      <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:10px;text-transform:uppercase;letter-spacing:0.5px">Map Excel Columns → NKTI BIOMED MedTracker Fields</div>
+      <div class="col-map-grid" id="colMapGrid"></div>
+    </div>
+    <!-- Auto-corrections summary -->
+    <div id="correctionsSummary"></div>
+    <!-- Preview table -->
+    <div class="preview-table-wrap" id="previewTableWrap"></div>
+    <div class="preview-info" id="previewInfo"></div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeImportModal()">Cancel</button>
+      <button class="btn-save" style="background:#7c3aed" onclick="confirmImport()">⬆ Import Data</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── STORAGE ─────────────────────────────────────────────────────────────────
+const STORAGE_KEY = 'nkti_biomed_equipment_v1';
+
+const DEFAULT_DATA = [
+  { id:1,  name:'Patient Monitor',      brand:'Philips',        model:'IntelliVue MX40',  serial:'SN-2024-001', date:'2024-01-15', section:'ICU-A',    status:'Active',      supplier:'MedEquip PH',          area:'ICU',            category:'NKTI-INHOUSE',                  building:'MAIN BUILDING',       wattage:150,  hours:24 },
+  { id:2,  name:'Ventilator',           brand:'Dräger',         model:'Evita V500',        serial:'SN-2023-044', date:'2023-06-10', section:'ICU-B',    status:'Active',      supplier:'Draeger Philippines',   area:'ICU',            category:'OUTSOURCE-UNDERWARRANTY',       building:'MAIN BUILDING',       wattage:450,  hours:24 },
+  { id:3,  name:'Infusion Pump',        brand:'B.Braun',        model:'Perfusor Space',    serial:'SN-2024-012', date:'2024-03-20', section:'ICU-A',    status:'Maintenance', supplier:'B.Braun PH',            area:'ICU',            category:'OUTSOURCE-DIRECT CONTRACTING',  building:'MAIN BUILDING',       wattage:30,   hours:16 },
+  { id:4,  name:'Defibrillator',        brand:'Zoll',           model:'R Series',          serial:'SN-2022-088', date:'2022-09-05', section:'ER-1',     status:'Active',      supplier:'Zoll Medical',          area:'Emergency Room', category:'NKTI-INHOUSE',                  building:'ANNEX I BUILDING',    wattage:200,  hours:24 },
+  { id:5,  name:'ECG Machine',          brand:'GE Healthcare',  model:'MAC 5500',          serial:'SN-2023-099', date:'2023-11-18', section:'ER-2',     status:'Active',      supplier:'GE Healthcare PH',      area:'Emergency Room', category:'OUTSOURCE-TIEUP',               building:'ANNEX I BUILDING',    wattage:100,  hours:12 },
+  { id:6,  name:'Portable Suction',     brand:'Medela',         model:'Vario 18',          serial:'SN-2021-055', date:'2021-04-22', section:'ER-1',     status:'Inactive',    supplier:'MedSupply PH',          area:'Emergency Room', category:'NKTI-INHOUSE',                  building:'ANNEX I BUILDING',    wattage:80,   hours:0  },
+  { id:7,  name:'Anesthesia Machine',   brand:'Dräger',         model:'Perseus A500',      serial:'SN-2024-007', date:'2024-02-01', section:'OR-1',     status:'Active',      supplier:'Draeger Philippines',   area:'Operating Room', category:'OUTSOURCE-UNDERWARRANTY',       building:'MAIN BUILDING',       wattage:800,  hours:8  },
+  { id:8,  name:'Surgical Light',       brand:'Philips',        model:'Shadowless LED',    serial:'SN-2022-033', date:'2022-07-14', section:'OR-2',     status:'Active',      supplier:'MedEquip PH',           area:'Operating Room', category:'NKTI-INHOUSE',                  building:'MAIN BUILDING',       wattage:300,  hours:8  },
+  { id:9,  name:'Electrosurgical Unit', brand:'Covidien',       model:'Force EZc',         serial:'SN-2023-071', date:'2023-08-30', section:'OR-1',     status:'Active',      supplier:'Medtronic PH',          area:'Operating Room', category:'OUTSOURCE-DIRECT CONTRACTING',  building:'MAIN BUILDING',       wattage:400,  hours:6  },
+  { id:10, name:'X-Ray Machine',        brand:'Siemens',        model:'Ysio Max',          serial:'SN-2020-011', date:'2020-12-01', section:'RAD-1',    status:'Active',      supplier:'Siemens Healthineers',  area:'Radiology',      category:'OUTSOURCE-TIEUP',               building:'DIAGNOSTIC BUILDING', wattage:2500, hours:10 },
+  { id:11, name:'Ultrasound',           brand:'GE Healthcare',  model:'LOGIQ E10',         serial:'SN-2023-031', date:'2023-04-16', section:'RAD-2',    status:'Active',      supplier:'GE Healthcare PH',      area:'Radiology',      category:'NKTI-INHOUSE',                  building:'DIAGNOSTIC BUILDING', wattage:600,  hours:10 },
+  { id:12, name:'MRI Scanner',          brand:'Siemens',        model:'MAGNETOM Sola',     serial:'SN-2021-004', date:'2021-06-30', section:'RAD-1',    status:'Maintenance', supplier:'Siemens Healthineers',  area:'Radiology',      category:'OUTSOURCE-DIRECT CONTRACTING',  building:'DIAGNOSTIC BUILDING', wattage:35000,hours:8  },
+  { id:13, name:'Hematology Analyzer',  brand:'Sysmex',         model:'XN-3000',           serial:'SN-2022-066', date:'2022-03-08', section:'LAB-1',    status:'Active',      supplier:'Sysmex PH',             area:'Laboratory',     category:'OUTSOURCE-UNDERWARRANTY',       building:'DIAGNOSTIC BUILDING', wattage:900,  hours:16 },
+  { id:14, name:'Chemistry Analyzer',   brand:'Beckman Coulter',model:'AU5800',            serial:'SN-2023-050', date:'2023-02-25', section:'LAB-1',    status:'Active',      supplier:'BC PH',                 area:'Laboratory',     category:'OUTSOURCE-TIEUP',               building:'DIAGNOSTIC BUILDING', wattage:1200, hours:16 },
+  { id:15, name:'Centrifuge',           brand:'Eppendorf',      model:'5810 R',            serial:'SN-2020-077', date:'2020-08-11', section:'LAB-2',    status:'Condemned',   supplier:'Lab Solutions',         area:'Laboratory',     category:'NKTI-INHOUSE',                  building:'ANNEX II BUILDING',   wattage:250,  hours:0  },
+  { id:16, name:'ECG Holter Monitor',   brand:'GE Healthcare',  model:'SEER Light',        serial:'SN-2024-019', date:'2024-05-05', section:'CARDIO-1', status:'Active',      supplier:'GE Healthcare PH',      area:'Cardiology',     category:'OUTSOURCE-DIRECT CONTRACTING',  building:'ANNEX II BUILDING',   wattage:50,   hours:12 },
+  { id:17, name:'Echocardiogram',       brand:'Philips',        model:'EPIQ CVx',          serial:'SN-2023-082', date:'2023-09-22', section:'CARDIO-1', status:'Active',      supplier:'MedEquip PH',           area:'Cardiology',     category:'NKTI-INHOUSE',                  building:'ANNEX II BUILDING',   wattage:700,  hours:10 },
+  { id:18, name:'Incubator',            brand:'Dräger',         model:'Caleo',             serial:'SN-2022-040', date:'2022-11-15', section:'PEDS-1',   status:'Active',      supplier:'Draeger Philippines',   area:'Pediatrics',     category:'OUTSOURCE-UNDERWARRANTY',       building:'ANNEX I BUILDING',    wattage:200,  hours:24 },
+  { id:19, name:'Infant Warmer',        brand:'GE Healthcare',  model:'Giraffe OmniBed',   serial:'SN-2024-028', date:'2024-01-08', section:'PEDS-2',   status:'Active',      supplier:'GE Healthcare PH',      area:'Pediatrics',     category:'NKTI-INHOUSE',                  building:'ANNEX I BUILDING',    wattage:175,  hours:24 },
+  { id:20, name:'C-Arm Fluoroscopy',    brand:'Siemens',        model:'Cios Spin',         serial:'SN-2023-060', date:'2023-07-19', section:'ORTHO-1',  status:'Active',      supplier:'Siemens Healthineers',  area:'Orthopedics',    category:'OUTSOURCE-TIEUP',               building:'ANNEX II BUILDING',   wattage:3500, hours:6  },
+];
+
+function loadData() {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) return JSON.parse(stored);
+  } catch(e) {}
+  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(equipment));
+    setSaveStatus(true);
+  } catch(e) {
+    showToast('⚠ Could not save to browser storage');
+  }
+}
+
+function setSaveStatus(saved) {
+  const dot = document.getElementById('saveDot');
+  const lbl = document.getElementById('saveLabel');
+  if (saved) {
+    dot.classList.remove('unsaved');
+    lbl.textContent = 'Saved';
+  } else {
+    dot.classList.add('unsaved');
+    lbl.textContent = 'Unsaved';
+  }
+}
+
+// ─── DATA ───────────────────────────────────────────────────────────────────
+let equipment = loadData();
+
+let editId = null;
+let currentPage = 1;
+const perPage = 8;
+let sortKey = '';
+let sortDir = 1;
+let selectedArea = '';
+
+const COLORS = ['#0ea5e9','#06b6d4','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#f97316'];
+
+// ─── DATETIME ────────────────────────────────────────────────────────────────
+function updateDatetime() {
+  const now = new Date();
+  document.getElementById('datetime').textContent = now.toLocaleString('en-PH', { dateStyle:'medium', timeStyle:'short' });
+}
+updateDatetime();
+setInterval(updateDatetime, 60000);
+
+// ─── STATS ───────────────────────────────────────────────────────────────────
+function renderStats() {
+  const total = equipment.length;
+  const active = equipment.filter(e => e.status === 'Active').length;
+  const maint = equipment.filter(e => e.status === 'Maintenance').length;
+  const areas = [...new Set(equipment.map(e => e.area))].length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat-card">
+      <div class="stat-label">Total Equipment</div>
+      <div class="stat-value">${total}</div>
+      <div class="stat-sub">Across all areas</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Active Units</div>
+      <div class="stat-value" style="color:var(--accent3)">${active}</div>
+      <div class="stat-sub"><span class="stat-dot" style="background:var(--accent3)"></span>${Math.round(active/total*100)}% operational</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">For Maintenance</div>
+      <div class="stat-value" style="color:var(--warn)">${maint}</div>
+      <div class="stat-sub"><span class="stat-dot" style="background:var(--warn)"></span>Needs servicing</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Areas Covered</div>
+      <div class="stat-value">${areas}</div>
+      <div class="stat-sub">Departments tracked</div>
+    </div>
+  `;
+}
+
+// ─── CHARTS ──────────────────────────────────────────────────────────────────
+let areaChartInst, brandChartInst, stackedChartInst, categoryChartInst, buildingChartInst, consumptionChartInst;
+
+function catClass(c) {
+  if (!c) return 'cat-inhouse';
+  if (c === 'NKTI-INHOUSE') return 'cat-inhouse';
+  if (c === 'OUTSOURCE-DIRECT CONTRACTING') return 'cat-direct';
+  if (c === 'OUTSOURCE-UNDERWARRANTY') return 'cat-warranty';
+  return 'cat-tieup';
+}
+
+function catShort(c) {
+  if (!c) return '—';
+  if (c === 'NKTI-INHOUSE') return 'INHOUSE';
+  if (c === 'OUTSOURCE-DIRECT CONTRACTING') return 'DIRECT';
+  if (c === 'OUTSOURCE-UNDERWARRANTY') return 'WARRANTY';
+  return 'TIE-UP';
+}
+
+function bldgClass(b) {
+  if (!b) return 'bldg-main';
+  if (b === 'MAIN BUILDING') return 'bldg-main';
+  if (b === 'ANNEX I BUILDING') return 'bldg-annex1';
+  if (b === 'ANNEX II BUILDING') return 'bldg-annex2';
+  return 'bldg-diag';
+}
+
+function bldgShort(b) {
+  if (!b) return '—';
+  if (b === 'MAIN BUILDING') return 'MAIN';
+  if (b === 'ANNEX I BUILDING') return 'ANNEX I';
+  if (b === 'ANNEX II BUILDING') return 'ANNEX II';
+  return 'DIAGNOSTIC';
+}
+
+function getAreas() {
+  return [...new Set(equipment.map(e => e.area))].sort();
+}
+
+function getBrands() {
+  return [...new Set(equipment.map(e => e.brand))].sort();
+}
+
+function renderAreaFilters() {
+  const areas = getAreas();
+  const wrap = document.getElementById('areaFilters');
+  wrap.innerHTML = `<button class="area-btn active" data-area="" onclick="selectArea(this,'')">All</button>` +
+    areas.map(a => `<button class="area-btn" data-area="${a}" onclick="selectArea(this,'${a}')">${a.split(' ')[0]}</button>`).join('');
+
+  const sel = document.getElementById('filterArea');
+  sel.innerHTML = `<option value="">All Areas</option>` + areas.map(a => `<option>${a}</option>`).join('');
+}
+
+function selectArea(btn, area) {
+  document.querySelectorAll('.area-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedArea = area;
+  document.getElementById('brandSubtitle').textContent = (area || 'All areas') + ' · by brand';
+  renderBrandChart();
+}
+
+function renderAreaChart() {
+  const areas = getAreas();
+  const counts = areas.map(a => equipment.filter(e => e.area === a).length);
+  const total = counts.reduce((s,c) => s+c, 0) || 1;
+
+  if (areaChartInst) areaChartInst.destroy();
+  areaChartInst = new Chart(document.getElementById('areaChart'), {
+    type: 'bar',
+    data: {
+      labels: areas,
+      datasets: [{ data: counts, backgroundColor: COLORS, borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 32, left: 8, right: 8, bottom: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.raw} units`,
+          afterLabel: ctx => ` ${((ctx.raw/total)*100).toFixed(1)}% of total`
+        }}
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#64748b' } },
+        y: {
+          grid: { color: '#f1f5f9' },
+          ticks: { font: { family: 'Space Mono', size: 10 }, color: '#94a3b8' },
+          beginAtZero: true
+        }
+      }
+    },
+    plugins: [{
+      id: 'pctLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, data } = chart;
+        const tot = data.datasets[0].data.reduce((s,v)=>s+v,0)||1;
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const val = data.datasets[0].data[i];
+          const pct = ((val/tot)*100).toFixed(1)+'%';
+          ctx.save();
+          ctx.font = 'bold 11px Space Mono, monospace';
+          ctx.fillStyle = '#334155';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(pct, bar.x, bar.y - 4);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+}
+
+function renderBrandChart() {
+  const filtered = selectedArea ? equipment.filter(e => e.area === selectedArea) : equipment;
+  const brandMap = {};
+  filtered.forEach(e => { brandMap[e.brand] = (brandMap[e.brand] || 0) + 1; });
+  const labels = Object.keys(brandMap);
+  const data = Object.values(brandMap);
+  const total = data.reduce((s,v)=>s+v,0)||1;
+
+  if (brandChartInst) brandChartInst.destroy();
+  brandChartInst = new Chart(document.getElementById('brandChart'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data, backgroundColor: COLORS, borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { family: 'DM Sans', size: 11 }, color: '#475569', boxWidth: 12, padding: 16,
+            generateLabels: chart => {
+              const ds = chart.data.datasets[0];
+              return chart.data.labels.map((lbl, i) => ({
+                text: `${lbl}  ${((ds.data[i]/total)*100).toFixed(1)}%`,
+                fillStyle: ds.backgroundColor[i],
+                strokeStyle: '#fff', lineWidth: 2, index: i
+              }));
+            }
+          }
+        },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.raw} units`,
+          afterLabel: ctx => ` Share: ${((ctx.raw/total)*100).toFixed(1)}%`
+        }}
+      },
+      cutout: '60%'
+    },
+    plugins: [{
+      id: 'centerText',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { left, top, right, bottom } } = chart;
+        const cx = (left+right)/2, cy = (top+bottom)/2;
+        ctx.save();
+        ctx.font = 'bold 22px Space Mono, monospace';
+        ctx.fillStyle = '#0f172a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(total, cx, cy-8);
+        ctx.font = '11px DM Sans, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('units', cx, cy+12);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+function renderStackedChart() {
+  const areas = getAreas();
+  const eqTypes = [...new Set(equipment.map(e => e.name))].slice(0, 8);
+  const areaTotals = areas.map(a => equipment.filter(e => e.area === a).length);
+  const grandTotal = areaTotals.reduce((s,v)=>s+v,0)||1;
+
+  const datasets = eqTypes.map((type, i) => ({
+    label: type,
+    data: areas.map(a => equipment.filter(e => e.area === a && e.name === type).length),
+    backgroundColor: COLORS[i % COLORS.length],
+    borderRadius: 4,
+    borderSkipped: false
+  }));
+
+  if (stackedChartInst) stackedChartInst.destroy();
+  stackedChartInst = new Chart(document.getElementById('stackedChart'), {
+    type: 'bar',
+    data: { labels: areas, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 32, left: 8, right: 8, bottom: 8 } },
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'DM Sans', size: 11 }, color: '#475569', boxWidth: 12, padding: 16 } },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.dataset.label}: ${ctx.raw} units`,
+          afterLabel: ctx => {
+            const areaTotal = areaTotals[ctx.dataIndex]||1;
+            return ` ${((ctx.raw/areaTotal)*100).toFixed(1)}% of area · ${((ctx.raw/grandTotal)*100).toFixed(1)}% of all`;
+          }
+        }}
+      },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#64748b' } },
+        y: { stacked: true, grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Space Mono', size: 10 }, color: '#94a3b8' } }
+      }
+    },
+    plugins: [{
+      id: 'stackedPctTop',
+      afterDatasetsDraw(chart) {
+        const { ctx } = chart;
+        const metas = chart.data.datasets.map((_, i) => chart.getDatasetMeta(i));
+        areaTotals.forEach((areaTotal, colIdx) => {
+          if (!areaTotal) return;
+          const pct = ((areaTotal/grandTotal)*100).toFixed(1)+'%';
+          // Find the topmost bar in this column
+          let topY = Infinity;
+          metas.forEach(meta => {
+            const bar = meta.data[colIdx];
+            if (bar && bar.y < topY) topY = bar.y;
+          });
+          const bar0 = metas[0] && metas[0].data[colIdx];
+          if (!bar0) return;
+          ctx.save();
+          ctx.font = 'bold 10px Space Mono, monospace';
+          ctx.fillStyle = '#475569';
+          ctx.textAlign = 'center';
+          ctx.fillText(pct, bar0.x, topY - 6);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+}
+
+function renderCategoryChart() {
+  const cats = ['NKTI-INHOUSE','OUTSOURCE-DIRECT CONTRACTING','OUTSOURCE-UNDERWARRANTY','OUTSOURCE-TIEUP'];
+  const counts = cats.map(c => equipment.filter(e => e.category === c).length);
+  const labels = ['INHOUSE','DIRECT CONTRACT','UNDERWARRANTY','TIE-UP'];
+  const catColors = ['#3b82f6','#ec4899','#10b981','#f59e0b'];
+  const total = counts.reduce((s,v)=>s+v,0)||1;
+
+  if (categoryChartInst) categoryChartInst.destroy();
+  categoryChartInst = new Chart(document.getElementById('categoryChart'), {
+    type: 'doughnut',
+    data: {
+      labels,
+      datasets: [{ data: counts, backgroundColor: catColors, borderWidth: 2, borderColor: '#fff', hoverOffset: 8 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'bottom',
+          labels: {
+            font: { family: 'DM Sans', size: 11 }, color: '#475569', boxWidth: 12, padding: 16,
+            generateLabels: chart => {
+              const ds = chart.data.datasets[0];
+              return chart.data.labels.map((lbl, i) => ({
+                text: `${lbl}  ${((ds.data[i]/total)*100).toFixed(1)}%`,
+                fillStyle: catColors[i],
+                strokeStyle: '#fff', lineWidth: 2, index: i
+              }));
+            }
+          }
+        },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.raw} units`,
+          afterLabel: ctx => ` Share: ${((ctx.raw/total)*100).toFixed(1)}%`
+        }}
+      },
+      cutout: '55%'
+    },
+    plugins: [{
+      id: 'catCenterText',
+      beforeDraw(chart) {
+        const { ctx, chartArea: { left, top, right, bottom } } = chart;
+        const cx = (left+right)/2, cy = (top+bottom)/2;
+        ctx.save();
+        ctx.font = 'bold 22px Space Mono, monospace';
+        ctx.fillStyle = '#0f172a';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText(total, cx, cy-8);
+        ctx.font = '11px DM Sans, sans-serif';
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText('total', cx, cy+12);
+        ctx.restore();
+      }
+    }]
+  });
+}
+
+function renderBuildingChart() {
+  const bldgs = ['MAIN BUILDING','ANNEX I BUILDING','ANNEX II BUILDING','DIAGNOSTIC BUILDING'];
+  const counts = bldgs.map(b => equipment.filter(e => e.building === b).length);
+  const labels = ['Main Bldg','Annex I','Annex II','Diagnostic'];
+  const bColors = ['#8b5cf6','#f97316','#06b6d4','#22c55e'];
+  const total = counts.reduce((s,v)=>s+v,0)||1;
+
+  if (buildingChartInst) buildingChartInst.destroy();
+  buildingChartInst = new Chart(document.getElementById('buildingChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ data: counts, backgroundColor: bColors, borderRadius: 8, borderSkipped: false }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 48, left: 8, right: 16, bottom: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.raw} units`,
+          afterLabel: ctx => ` ${((ctx.raw/total)*100).toFixed(1)}% of all equipment`
+        }}
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { family: 'DM Sans', size: 11 }, color: '#64748b' } },
+        y: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Space Mono', size: 10 }, color: '#94a3b8' }, beginAtZero: true }
+      }
+    },
+    plugins: [{
+      id: 'bldgPctLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, data } = chart;
+        const tot = data.datasets[0].data.reduce((s,v)=>s+v,0)||1;
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const val = data.datasets[0].data[i];
+          const pct = ((val/tot)*100).toFixed(1)+'%';
+          const count = val + ' units';
+          ctx.save();
+          ctx.font = 'bold 11px Space Mono, monospace';
+          ctx.fillStyle = '#334155';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'bottom';
+          ctx.fillText(pct, bar.x, bar.y - 4);
+          ctx.font = '10px DM Sans, sans-serif';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(count, bar.x, bar.y - 17);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+}
+
+function renderConsumptionChart() {
+  const bySection = {};
+  equipment.forEach(e => {
+    const key = e.section || 'Unknown';
+    const kwh = ((e.wattage||0) * (e.hours||0) * 30) / 1000;
+    bySection[key] = (bySection[key] || 0) + kwh;
+  });
+  const sorted = Object.entries(bySection).sort((a,b) => b[1]-a[1]).slice(0,12);
+  const labels = sorted.map(x => x[0]);
+  const data   = sorted.map(x => parseFloat(x[1].toFixed(1)));
+  const totalKwh = data.reduce((s,v)=>s+v,0)||1;
+  const maxVal = Math.max(...data, 1);
+  const bgColors = data.map(v => {
+    const r = v/maxVal;
+    return r > 0.7 ? '#ef4444' : r > 0.4 ? '#f59e0b' : '#3b82f6';
+  });
+
+  if (consumptionChartInst) consumptionChartInst.destroy();
+  consumptionChartInst = new Chart(document.getElementById('consumptionChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{ label: 'kWh/month', data, backgroundColor: bgColors, borderRadius: 6, borderSkipped: false }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      layout: { padding: { top: 8, left: 8, right: 72, bottom: 8 } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          label: ctx => ` ${ctx.raw.toLocaleString()} kWh/mo`,
+          afterLabel: ctx => ` ${((ctx.raw/totalKwh)*100).toFixed(1)}% of total consumption`
+        }}
+      },
+      scales: {
+        x: { grid: { color: '#f1f5f9' }, ticks: { font: { family: 'Space Mono', size: 10 }, color: '#94a3b8' }, beginAtZero: true },
+        y: {
+          grid: { display: false },
+          ticks: { font: { family: 'DM Sans', size: 11 }, color: '#64748b' }
+        }
+      }
+    },
+    plugins: [{
+      id: 'kwhPctLabels',
+      afterDatasetsDraw(chart) {
+        const { ctx, data: cd } = chart;
+        const tot = cd.datasets[0].data.reduce((s,v)=>s+v,0)||1;
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const val = cd.datasets[0].data[i];
+          const pct = ((val/tot)*100).toFixed(1)+'%';
+          ctx.save();
+          ctx.font = 'bold 10px Space Mono, monospace';
+          ctx.fillStyle = '#334155';
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(pct, bar.x + 6, bar.y);
+          ctx.restore();
+        });
+      }
+    }]
+  });
+}
+
+function renderWattageTables() {
+  const rate = parseFloat(document.getElementById('kwhrRate').value) || 12;
+  const fmt = n => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits:2, maximumFractionDigits:2 });
+  const fmtK = n => n >= 1000 ? (n/1000).toFixed(1)+'k' : n.toFixed(1);
+
+  // Helper: compute kWh/mo for one equipment
+  const kwhOf = e => ((e.wattage||0) * (e.hours||0) * 30) / 1000;
+
+  // BY SECTION
+  const secMap = {};
+  equipment.forEach(e => {
+    const k = e.section || 'Unknown';
+    if (!secMap[k]) secMap[k] = { count:0, totalW:0, totalKwh:0 };
+    secMap[k].count++;
+    secMap[k].totalW += (e.wattage||0);
+    secMap[k].totalKwh += kwhOf(e);
+  });
+  const secRows = Object.entries(secMap).sort((a,b) => b[1].totalKwh - a[1].totalKwh);
+  let secTotalW=0, secTotalKwh=0;
+  document.getElementById('sectionWattBody').innerHTML = secRows.map(([sec, d]) => {
+    secTotalW += d.totalW; secTotalKwh += d.totalKwh;
+    const cost = d.totalKwh * rate;
+    return `<tr>
+      <td>${sec}</td>
+      <td class="num">${d.count}</td>
+      <td class="num">${d.totalW.toLocaleString()} W</td>
+      <td class="num">${fmtK(d.totalKwh)} kWh</td>
+      <td class="cost">${fmt(cost)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('sectionWattFoot').innerHTML = `<tr>
+    <td>TOTAL</td>
+    <td>${equipment.length}</td>
+    <td>${secTotalW.toLocaleString()} W</td>
+    <td>${fmtK(secTotalKwh)} kWh</td>
+    <td>${fmt(secTotalKwh * rate)}</td>
+  </tr>`;
+
+  // BY BUILDING
+  const BUILDINGS = ['MAIN BUILDING','ANNEX I BUILDING','ANNEX II BUILDING','DIAGNOSTIC BUILDING'];
+  let bldTotalW=0, bldTotalKwh=0;
+  const bldRows = BUILDINGS.map(b => {
+    const items = equipment.filter(e => e.building === b);
+    const totalW = items.reduce((s,e) => s+(e.wattage||0),0);
+    const totalKwh = items.reduce((s,e) => s+kwhOf(e),0);
+    bldTotalW += totalW; bldTotalKwh += totalKwh;
+    return { b, count: items.length, totalW, totalKwh };
+  });
+  document.getElementById('buildingWattBody').innerHTML = bldRows.map(({b, count, totalW, totalKwh}) => {
+    const cost = totalKwh * rate;
+    return `<tr>
+      <td>${b}</td>
+      <td class="num">${count}</td>
+      <td class="num">${totalW.toLocaleString()} W</td>
+      <td class="num">${fmtK(totalKwh)} kWh</td>
+      <td class="cost">${fmt(cost)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('buildingWattFoot').innerHTML = `<tr>
+    <td>TOTAL</td>
+    <td>${equipment.length}</td>
+    <td>${bldTotalW.toLocaleString()} W</td>
+    <td>${fmtK(bldTotalKwh)} kWh</td>
+    <td>${fmt(bldTotalKwh * rate)}</td>
+  </tr>`;
+}
+
+// ─── TABLE ───────────────────────────────────────────────────────────────────
+function getFiltered() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const fa = document.getElementById('filterArea').value;
+  const fs = document.getElementById('filterStatus').value;
+  const fc = document.getElementById('filterCategory').value;
+  const fb = document.getElementById('filterBuilding').value;
+
+  let rows = equipment.filter(e => {
+    const match = [e.name,e.brand,e.model,e.serial,e.section,e.supplier,e.area,e.category,e.building].join(' ').toLowerCase().includes(q);
+    const aMatch = !fa || e.area === fa;
+    const sMatch = !fs || e.status === fs;
+    const cMatch = !fc || e.category === fc;
+    const bMatch = !fb || e.building === fb;
+    return match && aMatch && sMatch && cMatch && bMatch;
+  });
+
+  if (sortKey) {
+    rows.sort((a,b) => {
+      let av = a[sortKey]||'', bv = b[sortKey]||'';
+      if (sortKey === 'date') { av = new Date(av); bv = new Date(bv); }
+      else if (['wattage','hours'].includes(sortKey)) { av = Number(av)||0; bv = Number(bv)||0; }
+      else { av = av.toString().toLowerCase(); bv = bv.toString().toLowerCase(); }
+      return av < bv ? -sortDir : av > bv ? sortDir : 0;
+    });
+  }
+  return rows;
+}
+
+function badgeClass(s) {
+  if (s === 'Active') return 'badge-active';
+  if (s === 'Maintenance') return 'badge-maintenance';
+  if (s === 'Inactive') return 'badge-inactive';
+  return 'badge-condemned';
+}
+
+function renderTable() {
+  const rows = getFiltered();
+  const total = rows.length;
+  const pages = Math.ceil(total / perPage) || 1;
+  if (currentPage > pages) currentPage = 1;
+
+  const slice = rows.slice((currentPage-1)*perPage, currentPage*perPage);
+
+  document.getElementById('tableCount').textContent = `(${total} records)`;
+
+  document.getElementById('tableBody').innerHTML = slice.map(e => {
+    const w = e.wattage || 0;
+    const h = e.hours || 0;
+    const kwh = ((w * h * 30) / 1000).toFixed(1);
+    const isMyRow = currentUser && (ROLE_PERMS[currentUser.role]||ROLE_PERMS.viewer).locationScoped && canActOn(e);
+    const isLockedRow = currentUser && (ROLE_PERMS[currentUser.role]||ROLE_PERMS.viewer).locationScoped && !canActOn(e);
+    return `
+    <tr class="${isMyRow ? 'my-location-row' : isLockedRow ? 'locked-row' : ''}">
+      <td><div class="eq-name">${e.name}</div></td>
+      <td><div class="eq-brand">${e.brand}</div></td>
+      <td style="color:var(--text2)">${e.model}</td>
+      <td><span class="serial">${e.serial}</span></td>
+      <td style="color:var(--text2)">${e.date}</td>
+      <td style="color:var(--text2)">${e.section}</td>
+      <td><span class="badge ${badgeClass(e.status)}">${e.status}</span></td>
+      <td style="color:var(--text2)">${e.supplier}</td>
+      <td><span class="area-tag">${e.area}</span></td>
+      <td><span class="cat-tag ${catClass(e.category)}">${catShort(e.category||'')}</span></td>
+      <td><span class="bldg-tag ${bldgClass(e.building)}">${bldgShort(e.building||'')}</span></td>
+      <td style="text-align:right"><span class="watt-badge">${w.toLocaleString()} W</span></td>
+      <td style="text-align:right;font-family:'Space Mono',monospace;font-size:12px;color:var(--text2)">${h}h</td>
+      <td style="text-align:right;font-family:'Space Mono',monospace;font-size:12px;color:var(--accent)">${kwh}</td>
+      <td>
+        <div class="actions">
+          ${(()=>{
+            const editable = canEditUI(e);
+            const deletable = canDeleteUI(e);
+            const isScoped = currentUser && (ROLE_PERMS[currentUser.role]||ROLE_PERMS.viewer).locationScoped;
+            if (editable || deletable) {
+              return (editable ? `<button class="icon-btn" onclick="editEquipment(${e.id})" title="Edit">✎</button>` : '') +
+                     (deletable ? `<button class="icon-btn del" onclick="deleteEquipment(${e.id})" title="Delete">✕</button>` : '');
+            } else if (isScoped) {
+              const reason = !currentUser.assignedBuilding ? 'No location assigned' :
+                (e.building !== currentUser.assignedBuilding ? e.building : e.section + ' ≠ ' + currentUser.assignedSection);
+              return `<span style="font-size:10px;color:#94a3b8;white-space:nowrap" title="Outside your location (${reason})">🔒 ${e.building===currentUser.assignedBuilding?e.section:e.building}</span>`;
+            } else {
+              return '<span style="font-size:11px;color:var(--text3)">View only</span>';
+            }
+          })()}
+        </div>
+      </td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="15" style="text-align:center;padding:40px;color:var(--text3)">No records found</td></tr>`;
+
+  document.getElementById('pageInfo').textContent = `Showing ${((currentPage-1)*perPage)+1}–${Math.min(currentPage*perPage,total)} of ${total}`;
+
+  let btns = '';
+  btns += `<button class="page-btn" onclick="goPage(${currentPage-1})" ${currentPage===1?'disabled':''}>‹</button>`;
+  for (let i = 1; i <= pages; i++) {
+    btns += `<button class="page-btn ${i===currentPage?'active':''}" onclick="goPage(${i})">${i}</button>`;
+  }
+  btns += `<button class="page-btn" onclick="goPage(${currentPage+1})" ${currentPage===pages?'disabled':''}>›</button>`;
+  document.getElementById('pageBtns').innerHTML = btns;
+}
+
+function goPage(p) {
+  const pages = Math.ceil(getFiltered().length / perPage) || 1;
+  if (p < 1 || p > pages) return;
+  currentPage = p;
+  renderTable();
+}
+
+function sortTable(key) {
+  if (sortKey === key) sortDir *= -1; else { sortKey = key; sortDir = 1; }
+  currentPage = 1;
+  renderTable();
+}
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'searchInput') { currentPage = 1; renderTable(); }
+});
+document.addEventListener('change', e => {
+  if (['filterArea','filterStatus','filterCategory','filterBuilding'].includes(e.target.id)) { currentPage = 1; renderTable(); }
+});
+
+// ─── MODAL ───────────────────────────────────────────────────────────────────
+function openModal(id) {
+  if (id && !requirePerm('canEdit')) return;
+  if (!id && !requirePerm('canAdd')) return;
+
+  // Location-scope check for viewers
+  const perms = ROLE_PERMS[currentUser ? currentUser.role : 'viewer'] || ROLE_PERMS.viewer;
+  if (perms.locationScoped) {
+    if (!currentUser.assignedBuilding) {
+      showToast('⛔ You have no assigned location — contact your Admin');
+      return;
+    }
+    if (id) {
+      const item = equipment.find(x => x.id === id);
+      if (item && !canActOn(item)) {
+        showToast('⛔ You can only edit equipment in: ' + currentUser.assignedBuilding + (currentUser.assignedSection ? ' / ' + currentUser.assignedSection : ''));
+        return;
+      }
+    }
+  }
+
+  editId = id || null;
+  document.getElementById('modalTitle').textContent = editId ? 'Edit Equipment' : 'Add Equipment';
+
+  const loc = getUserLocation(); // null for admin/engineer, {building, section} for viewer
+  const isViewer = loc !== null;
+
+  if (editId) {
+    const e = equipment.find(x => x.id === editId);
+    document.getElementById('f_name').value = e.name;
+    document.getElementById('f_brand').value = e.brand;
+    document.getElementById('f_model').value = e.model;
+    document.getElementById('f_serial').value = e.serial;
+    document.getElementById('f_date').value = e.date;
+    document.getElementById('f_section').value = e.section;
+    document.getElementById('f_status').value = e.status;
+    document.getElementById('f_supplier').value = e.supplier;
+    document.getElementById('f_area').value = e.area;
+    document.getElementById('f_category').value = e.category || 'NKTI-INHOUSE';
+    document.getElementById('f_building').value = e.building || 'MAIN BUILDING';
+    document.getElementById('f_wattage').value = e.wattage || '';
+    document.getElementById('f_hours').value = e.hours !== undefined ? e.hours : '';
+  } else {
+    ['f_name','f_brand','f_model','f_serial','f_supplier'].forEach(fid => document.getElementById(fid).value = '');
+    document.getElementById('f_date').value = '';
+    document.getElementById('f_status').value = 'Active';
+    document.getElementById('f_area').value = 'ICU';
+    document.getElementById('f_category').value = 'NKTI-INHOUSE';
+    document.getElementById('f_section').value = isViewer && loc.section ? loc.section : '';
+    document.getElementById('f_building').value = isViewer && loc.building ? loc.building : 'MAIN BUILDING';
+    document.getElementById('f_wattage').value = '';
+    document.getElementById('f_hours').value = '';
+  }
+
+  // Lock building & section fields for viewers so they can't change location
+  const fBuilding = document.getElementById('f_building');
+  const fSection  = document.getElementById('f_section');
+  if (isViewer) {
+    if (loc.building) {
+      fBuilding.disabled = true;
+      fBuilding.style.background = '#f1f5f9';
+      fBuilding.title = 'Locked to your assigned building';
+    }
+    if (loc.section) {
+      fSection.disabled = true;
+      fSection.style.background = '#f1f5f9';
+      fSection.title = 'Locked to your assigned section';
+    }
+    // Show a notice
+    document.getElementById('modalTitle').textContent = (editId ? 'Edit Equipment' : 'Add Equipment') +
+      ' — ' + (loc.building || 'Your Location');
+  } else {
+    fBuilding.disabled = false;
+    fBuilding.style.background = '';
+    fSection.disabled  = false;
+    fSection.style.background  = '';
+  }
+
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editId = null;
+}
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+function saveEquipment() {
+  const fields = { name:'f_name', brand:'f_brand', model:'f_model', serial:'f_serial', date:'f_date', section:'f_section', status:'f_status', supplier:'f_supplier', area:'f_area', category:'f_category', building:'f_building' };
+  const data = {};
+  for (const [key, fid] of Object.entries(fields)) {
+    const el = document.getElementById(fid);
+    data[key] = (el.disabled ? el.value : el.value.trim());
+  }
+  data.wattage = parseFloat(document.getElementById('f_wattage').value) || 0;
+  data.hours   = parseFloat(document.getElementById('f_hours').value) || 0;
+  if (!data.name || !data.brand || !data.serial) { showToast('⚠ Please fill required fields'); return; }
+
+  // Enforce location scope for viewers
+  const loc = getUserLocation();
+  if (loc) {
+    if (loc.building) data.building = loc.building;
+    if (loc.section)  data.section  = loc.section;
+    // Double-check they're not sneaking in another location
+    const testItem = { building: data.building, section: data.section };
+    if (!canActOn(testItem)) { showToast('⛔ Cannot save equipment outside your assigned location'); return; }
+  }
+
+  if (editId) {
+    const idx = equipment.findIndex(e => e.id === editId);
+    equipment[idx] = { ...equipment[idx], ...data };
+    showToast('✓ Equipment updated & saved');
+  } else {
+    equipment.push({ id: Date.now(), ...data });
+    showToast('✓ Equipment added & saved');
+  }
+  saveData();
+  closeModal();
+  renderAll();
+}
+
+function editEquipment(id) { openModal(id); }
+
+function deleteEquipment(id) {
+  if (!requirePerm('canDelete')) return;
+  const item = equipment.find(x => x.id === id);
+  if (item && !canActOn(item)) {
+    const u = currentUser;
+    const loc = u.assignedBuilding ? (u.assignedBuilding + (u.assignedSection ? ' / '+u.assignedSection : '')) : 'your location';
+    showToast('⛔ You can only delete equipment assigned to: ' + loc);
+    return;
+  }
+  if (!confirm('Delete this equipment record?')) return;
+  equipment = equipment.filter(e => e.id !== id);
+  saveData();
+  showToast('🗑 Equipment deleted');
+  renderAll();
+}
+
+// ─── EXPORT / IMPORT ─────────────────────────────────────────────────────────
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(equipment, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `nkti_biomed_backup_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  showToast('⬇ Backup downloaded');
+}
+
+function importJSON(event) {
+  if (!requirePerm('canImport')) return;
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!Array.isArray(data)) throw new Error('Invalid format');
+      if (!confirm(`Restore ${data.length} records? This will replace current data.`)) return;
+      equipment = data;
+      saveData();
+      renderAll();
+      showToast(`✓ Restored ${data.length} records from backup`);
+    } catch(err) {
+      showToast('⚠ Invalid backup file');
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function exportCSV() {
+  const headers = ['Equipment Name','Brand','Model','Serial No.','Date Acquired','Section','Status','Supplier','Area','Category','Building Location','Wattage (W)','Daily Hours','kWh/mo'];
+  const rows = equipment.map(e => {
+    const kwh = (((e.wattage||0) * (e.hours||0) * 30) / 1000).toFixed(2);
+    return [e.name,e.brand,e.model,e.serial,e.date,e.section,e.status,e.supplier,e.area,e.category||'',e.building||'',e.wattage||0,e.hours||0,kwh]
+      .map(v => `"${(String(v||'')).replace(/"/g,'""')}"`).join(',');
+  });
+  const csv = [headers.join(','), ...rows].join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `nkti_biomed_equipment_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  showToast('⬇ CSV exported');
+}
+
+// ─── EXCEL EXPORT ────────────────────────────────────────────────────────────
+function exportExcel() {
+  const HEADERS = [
+    'Equipment Name','Brand','Model','Serial No.','Date Acquired',
+    'Section','Status','Supplier','Area','Category','Building Location',
+    'Wattage (W)','Daily Hours Used','kWh/mo (calc)'
+  ];
+
+  const rows = equipment.map(e => {
+    const kwh = parseFloat((((e.wattage||0)*(e.hours||0)*30)/1000).toFixed(2));
+    return [
+      e.name, e.brand, e.model, e.serial, e.date,
+      e.section, e.status, e.supplier, e.area,
+      e.category||'', e.building||'',
+      e.wattage||0, e.hours||0, kwh
+    ];
+  });
+
+  const wsData = [HEADERS, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+  // Column widths
+  ws['!cols'] = [
+    {wch:24},{wch:16},{wch:20},{wch:16},{wch:14},
+    {wch:12},{wch:14},{wch:22},{wch:18},{wch:26},{wch:22},
+    {wch:12},{wch:14},{wch:12}
+  ];
+
+  // Style header row (bold + fill) — basic xlsx styling via sheet
+  const range = XLSX.utils.decode_range(ws['!ref']);
+  for (let C = range.s.c; C <= range.e.c; C++) {
+    const addr = XLSX.utils.encode_cell({r:0,c:C});
+    if (!ws[addr]) continue;
+    ws[addr].s = {
+      font: { bold: true, color: { rgb: 'FFFFFF' } },
+      fill: { fgColor: { rgb: '0EA5E9' } },
+      alignment: { horizontal: 'center' }
+    };
+  }
+
+  // Add a second summary sheet — By Building
+  const bldgs = ['MAIN BUILDING','ANNEX I BUILDING','ANNEX II BUILDING','DIAGNOSTIC BUILDING'];
+  const rate = parseFloat(document.getElementById('kwhrRate').value) || 12;
+  const summaryData = [
+    ['Building Location','Equipment Count','Total Wattage (W)','Total kWh/mo','Est. Cost/mo (₱)'],
+    ...bldgs.map(b => {
+      const items = equipment.filter(e => e.building === b);
+      const totalW = items.reduce((s,e)=>s+(e.wattage||0),0);
+      const totalKwh = parseFloat(items.reduce((s,e)=>s+(((e.wattage||0)*(e.hours||0)*30)/1000),0).toFixed(2));
+      return [b, items.length, totalW, totalKwh, parseFloat((totalKwh*rate).toFixed(2))];
+    })
+  ];
+
+  // By section summary
+  const secMap = {};
+  equipment.forEach(e => {
+    const k = e.section||'Unknown';
+    if(!secMap[k]) secMap[k]={count:0,totalW:0,totalKwh:0};
+    secMap[k].count++;
+    secMap[k].totalW += e.wattage||0;
+    secMap[k].totalKwh += ((e.wattage||0)*(e.hours||0)*30)/1000;
+  });
+  const sectionData = [
+    ['Section','Equipment Count','Total Wattage (W)','Total kWh/mo','Est. Cost/mo (₱)'],
+    ...Object.entries(secMap).sort((a,b)=>b[1].totalKwh-a[1].totalKwh).map(([sec,d])=>[
+      sec, d.count, d.totalW, parseFloat(d.totalKwh.toFixed(2)), parseFloat((d.totalKwh*rate).toFixed(2))
+    ])
+  ];
+
+  const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+  wsSummary['!cols'] = [{wch:24},{wch:16},{wch:18},{wch:14},{wch:18}];
+  const wsSection = XLSX.utils.aoa_to_sheet(sectionData);
+  wsSection['!cols'] = [{wch:16},{wch:16},{wch:18},{wch:14},{wch:18}];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Equipment Registry');
+  XLSX.utils.book_append_sheet(wb, wsSection, 'By Section');
+  XLSX.utils.book_append_sheet(wb, wsSummary, 'By Building');
+
+  XLSX.writeFile(wb, `NKTI_BIOMED_Equipment_${new Date().toISOString().slice(0,10)}.xlsx`);
+  showToast('⬇ Excel file downloaded (3 sheets)');
+}
+
+// ─── EXCEL / CSV UPLOAD & IMPORT ─────────────────────────────────────────────
+let importRows = [];
+let importHeaders = [];
+let importCorrections = []; // tracks all auto-corrections made
+
+// ── FIELD LABELS (priority order — matches columns in Excel template) ─────────
+const FIELD_LABELS = {
+  name:     'Equipment Name',
+  serial:   'Serial No.',
+  brand:    'Brand',
+  model:    'Model',
+  date:     'Date Acquired',
+  section:  'Section',
+  area:     'Area',
+  building: 'Building Location',
+  status:   'Status',
+  category: 'Category',
+  supplier: 'Supplier',
+  wattage:  'Wattage (W)',
+  hours:    'Daily Hours Used'
+};
+
+// ── CANONICAL VALUE DICTIONARIES ──────────────────────────────────────────────
+const VALID_STATUS    = ['Active','Maintenance','Inactive','Condemned'];
+const VALID_BUILDINGS = ['MAIN BUILDING','ANNEX I BUILDING','ANNEX II BUILDING','DIAGNOSTIC BUILDING'];
+const VALID_CATEGORIES= ['NKTI-INHOUSE','OUTSOURCE-DIRECT CONTRACTING','OUTSOURCE-UNDERWARRANTY','OUTSOURCE-TIEUP'];
+const VALID_AREAS     = ['ICU','Emergency Room','Operating Room','Radiology','Laboratory','Cardiology','Pediatrics','Orthopedics'];
+
+// Levenshtein distance — core of fuzzy matching
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({length:m+1}, (_,i) => Array.from({length:n+1}, (_,j) => j===0?i:0));
+  for (let j=1;j<=n;j++) dp[0][j]=j;
+  for (let i=1;i<=m;i++) for(let j=1;j<=n;j++) {
+    dp[i][j] = a[i-1]===b[j-1] ? dp[i-1][j-1] :
+      1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+  }
+  return dp[m][n];
+}
+
+// Fuzzy match a raw value to the best canonical value from a list
+// Returns { corrected, original, score, changed }
+function fuzzyMatch(raw, validList) {
+  if (!raw || raw.trim() === '') return { corrected: validList[0], original: raw, changed: false, score: 0 };
+  const norm = raw.trim().toUpperCase();
+  // Exact match (case-insensitive)
+  const exact = validList.find(v => v.toUpperCase() === norm);
+  if (exact) return { corrected: exact, original: raw, changed: exact !== raw.trim(), score: 1 };
+  // Substring match — does canonical contain the input or vice versa?
+  const sub = validList.find(v => v.toUpperCase().includes(norm) || norm.includes(v.toUpperCase()));
+  if (sub) return { corrected: sub, original: raw, changed: true, score: 0.9 };
+  // Levenshtein fuzzy
+  let best = null, bestDist = Infinity;
+  for (const v of validList) {
+    const dist = levenshtein(norm, v.toUpperCase());
+    const threshold = Math.max(3, Math.floor(v.length * 0.4)); // allow up to 40% edit distance
+    if (dist < bestDist && dist <= threshold) { best = v; bestDist = dist; }
+  }
+  if (best) return { corrected: best, original: raw, changed: true, score: +(1-(bestDist/best.length)).toFixed(2) };
+  // No match — return original unchanged
+  return { corrected: raw.trim(), original: raw, changed: false, score: 0 };
+}
+
+// Smart column header matcher
+function bestGuess(header) {
+  const h = header.toLowerCase().replace(/[^a-z0-9]/g,'');
+  if (h.includes('equipmentname') || h === 'name' || h.includes('equip')) return 'name';
+  if (h === 'serialno' || h === 'serial' || h === 'sn' || h.includes('serialnum')) return 'serial';
+  if (h.includes('brand') || h.includes('make') || h.includes('manufacturer')) return 'brand';
+  if (h === 'model' || h.includes('modelno') || h.includes('modelnumber')) return 'model';
+  if (h.includes('dateacq') || h.includes('acquired') || h === 'date' || h.includes('purchase')) return 'date';
+  if (h === 'section' || h.includes('sect') || h.includes('ward') || h.includes('unit')) return 'section';
+  if (h === 'area' || h.includes('dept') || h.includes('department') || h.includes('division')) return 'area';
+  if (h.includes('building') || h.includes('bldg') || h.includes('location') || h.includes('facility')) return 'building';
+  if (h === 'status' || h.includes('condition') || h.includes('state')) return 'status';
+  if (h.includes('categ') || h.includes('type') || h.includes('servicetype')) return 'category';
+  if (h.includes('supplier') || h.includes('vendor') || h.includes('provider')) return 'supplier';
+  if (h.includes('watt') || h === 'w' || h.includes('power')) return 'wattage';
+  if (h.includes('hour') || h.includes('hrs') || h === 'h' || h.includes('dailyhour')) return 'hours';
+  return '';
+}
+
+// Run smart auto-corrections on all rows after mapping
+function autoCorrectRows(rows, mapping) {
+  const corrections = [];
+  const corrected = rows.map((row, rowIdx) => {
+    const newRow = [...row];
+    const rowCorrections = [];
+    const applyFix = (field, validList) => {
+      const colIdx = mapping[field];
+      if (colIdx === undefined) return;
+      const rawVal = String(row[colIdx] === undefined ? '' : row[colIdx]).trim();
+      if (!rawVal) return;
+      const result = fuzzyMatch(rawVal, validList);
+      if (result.changed) {
+        newRow[colIdx] = result.corrected;
+        rowCorrections.push({ row: rowIdx+1, field: FIELD_LABELS[field]||field, original: result.original, corrected: result.corrected, score: result.score });
+      }
+    };
+    applyFix('status',   VALID_STATUS);
+    applyFix('building', VALID_BUILDINGS);
+    applyFix('category', VALID_CATEGORIES);
+    applyFix('area',     VALID_AREAS);
+    // Smart serial: strip extra spaces, normalize dashes
+    const sCol = mapping['serial'];
+    if (sCol !== undefined) {
+      const raw = String(row[sCol]||'').trim();
+      const cleaned = raw.replace(/\s+/g,'-').replace(/[-–—]+/g,'-').toUpperCase();
+      if (cleaned !== raw && cleaned) { newRow[sCol] = cleaned; rowCorrections.push({ row:rowIdx+1, field:'Serial No.', original:raw, corrected:cleaned, score:1 }); }
+    }
+    if (rowCorrections.length) corrections.push(...rowCorrections);
+    return newRow;
+  });
+  return { corrected, corrections };
+}
+
+function handleExcelUpload(event) {
+  if (!requirePerm('canImport')) return;
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: 'array', cellDates: true });
+      const sheetName = wb.SheetNames[0];
+      const ws = wb.Sheets[sheetName];
+      const jsonData = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+      if (!jsonData || jsonData.length < 2) { showToast('⚠ File appears empty or has no data rows'); return; }
+
+      importHeaders = jsonData[0].map(h => String(h).trim());
+      importRows = jsonData.slice(1).filter(r => r.some(c => c !== ''));
+      importCorrections = [];
+
+      document.getElementById('importModalTitle').textContent = `Import from: ${file.name}`;
+      document.getElementById('importFileInfo').textContent =
+        `Sheet: "${sheetName}" · ${importRows.length} rows · ${importHeaders.length} columns`;
+
+      buildColumnMapper();
+      buildPreviewTable();
+      document.getElementById('importModalOverlay').classList.add('open');
+    } catch(err) { showToast('⚠ Could not read file: ' + err.message); }
+  };
+  reader.readAsArrayBuffer(file);
+  event.target.value = '';
+}
+
+function buildColumnMapper() {
+  const fields = Object.keys(FIELD_LABELS);
+  const grid = document.getElementById('colMapGrid');
+  grid.innerHTML = fields.map(field => `
+    <div class="col-map-item">
+      <label class="col-map-label">${FIELD_LABELS[field]}</label>
+      <select class="col-map-select" id="map_${field}">
+        <option value="">(skip)</option>
+        ${importHeaders.map((h,i) => `<option value="${i}" ${bestGuess(h)===field?'selected':''}>${h||'Col '+(i+1)}</option>`).join('')}
+      </select>
+    </div>
+  `).join('');
+}
+
+function getMapping() {
+  const m = {};
+  Object.keys(FIELD_LABELS).forEach(f => {
+    const sel = document.getElementById('map_'+f);
+    if (sel && sel.value !== '') m[f] = parseInt(sel.value);
+  });
+  return m;
+}
+
+function buildPreviewTable() {
+  const mapping = getMapping();
+  const fields = Object.keys(FIELD_LABELS);
+
+  // Run auto-corrections on current mapping
+  const { corrected: corrRows, corrections } = autoCorrectRows(importRows, mapping);
+  importCorrections = corrections;
+
+  const preview = corrRows.slice(0,8);
+  const correctedCells = new Set(corrections.map(c => `${c.row-1}_${mapping[
+    Object.keys(FIELD_LABELS).find(k => FIELD_LABELS[k] === c.field)
+  ]}`));
+
+  const FIXED_FIELD_MAP = {};
+  Object.keys(FIELD_LABELS).forEach(k => { FIXED_FIELD_MAP[FIELD_LABELS[k]] = k; });
+
+  const thead = `<tr>${fields.map(f=>`<th>${FIELD_LABELS[f]}</th>`).join('')}</tr>`;
+  const tbody = preview.map((row, ri) => {
+    return `<tr>${fields.map(f => {
+      const idx = mapping[f];
+      const val = idx !== undefined ? row[idx] : undefined;
+      const isFixed = correctedCells.has(`${ri}_${idx}`);
+      const display = val !== '' && val !== undefined
+        ? (isFixed ? `<span style="background:#fef9c3;color:#92400e;border-radius:3px;padding:1px 4px;font-weight:600" title="Auto-corrected">✏ ${val}</span>` : val)
+        : '<span style="color:#cbd5e1">—</span>';
+      return `<td>${display}</td>`;
+    }).join('')}</tr>`;
+  }).join('');
+
+  document.getElementById('previewTableWrap').innerHTML =
+    `<table class="preview-table"><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
+
+  const mapped = Object.keys(mapping).length;
+  const hasName = 'name' in mapping;
+  const corrCount = corrections.length;
+
+  // Location scope notice for viewers
+  const loc = getUserLocation();
+  let locNote = '';
+  if (loc) {
+    locNote = ` · 📍 Rows will be assigned to ${loc.building || 'your building'}${loc.section ? ' / '+loc.section : ''}`;
+  }
+
+  // Corrections summary box
+  let corrHtml = '';
+  if (corrCount > 0) {
+    const rows = corrections.slice(0,10).map(c =>
+      `<tr><td>Row ${c.row}</td><td>${c.field}</td><td style="color:#ef4444">${c.original}</td><td style="color:#16a34a;font-weight:600">${c.corrected}</td><td>${Math.round(c.score*100)}%</td></tr>`
+    ).join('');
+    corrHtml = `<div style="margin:0 24px 12px;background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:12px">
+      <div style="font-size:12px;font-weight:700;color:#92400e;margin-bottom:8px">⚡ ${corrCount} Auto-Correction${corrCount>1?'s':''} Detected${corrections.length>10?' (showing first 10)':''}</div>
+      <div style="overflow-x:auto"><table style="font-size:11px;border-collapse:collapse;width:100%">
+        <tr style="color:#94a3b8;font-size:10px;text-transform:uppercase">
+          <th style="padding:3px 8px;text-align:left">Row</th>
+          <th style="padding:3px 8px;text-align:left">Field</th>
+          <th style="padding:3px 8px;text-align:left">Original</th>
+          <th style="padding:3px 8px;text-align:left">→ Corrected</th>
+          <th style="padding:3px 8px;text-align:left">Confidence</th>
+        </tr>
+        ${rows}
+      </table></div>
+    </div>`;
+  }
+  document.getElementById('correctionsSummary').innerHTML = corrHtml;
+
+  document.getElementById('previewInfo').className = 'preview-info' + (hasName ? '' : ' preview-warn');
+  document.getElementById('previewInfo').textContent = hasName
+    ? `✓ ${importRows.length} rows ready · ${mapped} fields mapped${corrCount ? ' · ✏ '+corrCount+' value(s) auto-corrected' : ' · ✓ No corrections needed'}${locNote}`
+    : `⚠ Map "Equipment Name" column first${locNote}`;
+}
+
+document.addEventListener('change', e => {
+  if (e.target.id && e.target.id.startsWith('map_')) buildPreviewTable();
+});
+
+function confirmImport() {
+  const mapping = getMapping();
+  if (!('name' in mapping)) { showToast('⚠ Map "Equipment Name" column first'); return; }
+
+  // Run corrections again on full dataset
+  const { corrected: corrRows } = autoCorrectRows(importRows, mapping);
+
+  const loc = getUserLocation(); // null for admin/engineer
+  const isScoped = loc !== null;
+
+  const mode = corrRows.length > 0 && equipment.length > 0
+    ? confirm(`Import ${corrRows.length} rows?\n\nOK = ADD to existing ${equipment.length} records\nCancel = REPLACE all current data`)
+    : false;
+
+  let skipped = 0;
+  const newItems = corrRows.map((row, i) => {
+    const obj = { id: Date.now() + i };
+    Object.entries(mapping).forEach(([field, colIdx]) => {
+      let val = row[colIdx];
+      if (val instanceof Date) val = val.toISOString().slice(0,10);
+      else val = String(val === undefined ? '' : val).trim();
+      if (field === 'wattage' || field === 'hours') val = parseFloat(val) || 0;
+      obj[field] = val;
+    });
+    // Smart defaults
+    if (!obj.status   || !VALID_STATUS.includes(obj.status))       obj.status   = 'Active';
+    if (!obj.category || !VALID_CATEGORIES.includes(obj.category)) obj.category = 'NKTI-INHOUSE';
+    if (!obj.building || !VALID_BUILDINGS.includes(obj.building))  obj.building = 'MAIN BUILDING';
+    if (!obj.area     || !VALID_AREAS.includes(obj.area))          obj.area     = 'ICU';
+    if (!obj.wattage) obj.wattage = 0;
+    if (!obj.hours)   obj.hours   = 0;
+
+    // Enforce location scope for viewers
+    if (isScoped) {
+      if (loc.building) obj.building = loc.building;
+      if (loc.section)  obj.section  = loc.section;
+      // If item doesn't match viewer's location (only relevant if viewer somehow bypassed)
+      if (!canActOn(obj)) { skipped++; return null; }
+    }
+    return obj;
+  }).filter(o => o && o.name && o.name !== '');
+
+  if (newItems.length === 0) { showToast('⚠ No valid rows found to import'); return; }
+
+  if (mode) {
+    equipment = [...equipment, ...newItems];
+  } else {
+    equipment = newItems;
+  }
+
+  saveData();
+  closeImportModal();
+  renderAll();
+  const corrCount = importCorrections.length;
+  const skipMsg = skipped ? ` · ${skipped} rows outside your location were skipped` : '';
+  const corrMsg = corrCount ? ` · ${corrCount} value(s) auto-corrected` : '';
+  showToast(`✓ Imported ${newItems.length} equipment records${corrMsg}${skipMsg}`);
+}
+
+function closeImportModal() {
+  document.getElementById('importModalOverlay').classList.remove('open');
+  importRows = []; importHeaders = []; importCorrections = [];
+}
+
+document.getElementById('importModalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('importModalOverlay')) closeImportModal();
+});
+
+// ─── DRAG AND DROP ───────────────────────────────────────────────────────────
+const dropOverlay = document.getElementById('dropOverlay');
+let dragCounter = 0;
+
+document.addEventListener('dragenter', e => {
+  if (e.dataTransfer.types.includes('Files')) {
+    dragCounter++;
+    dropOverlay.classList.add('active');
+  }
+});
+document.addEventListener('dragleave', () => {
+  dragCounter--;
+  if (dragCounter <= 0) { dragCounter = 0; dropOverlay.classList.remove('active'); }
+});
+document.addEventListener('dragover', e => e.preventDefault());
+document.addEventListener('drop', e => {
+  e.preventDefault();
+  dragCounter = 0;
+  dropOverlay.classList.remove('active');
+  const file = e.dataTransfer.files[0];
+  if (file && (file.name.endsWith('.xlsx') || file.name.endsWith('.xls') || file.name.endsWith('.csv'))) {
+    handleExcelUpload({ target: { files: [file], value: '' } });
+  } else if (file) {
+    showToast('⚠ Please drop an Excel (.xlsx/.xls) or CSV file');
+  }
+});
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2800);
+}
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+function renderAll() {
+  renderStats();
+  renderAreaFilters();
+  renderAreaChart();
+  renderBrandChart();
+  renderStackedChart();
+  renderCategoryChart();
+  renderBuildingChart();
+  renderConsumptionChart();
+  renderWattageTables();
+  renderTable();
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH SYSTEM
+// ═══════════════════════════════════════════════════════════════
+const USERS_KEY = 'medtrack_users_v1';
+const SESSION_KEY = 'medtrack_session_v1';
+
+const ROLE_PERMS = {
+  admin:    { canEdit:true,  canDelete:true,  canAdd:true,  canImport:true,  canManageUsers:true,  canExport:true,  locationScoped:false },
+  engineer: { canEdit:true,  canDelete:true,  canAdd:true,  canImport:true,  canManageUsers:false, canExport:true,  locationScoped:false },
+  viewer:   { canEdit:true,  canDelete:true,  canAdd:true,  canImport:true,  canManageUsers:false, canExport:true,  locationScoped:true  },
+};
+
+// Returns true if currentUser can act on an equipment item (checks location scope)
+function canActOn(equipItem) {
+  if (!currentUser) return false;
+  const perms = ROLE_PERMS[currentUser.role] || ROLE_PERMS.viewer;
+  if (!perms.locationScoped) return true; // admin/engineer: full access
+
+  const u = currentUser;
+  // If viewer has NO assigned building set at all, they cannot edit/delete anything
+  if (!u.assignedBuilding) return false;
+
+  // Building must match exactly
+  if (equipItem.building !== u.assignedBuilding) return false;
+
+  // If section is also assigned, that must match too
+  if (u.assignedSection && equipItem.section !== u.assignedSection) return false;
+
+  return true;
+}
+
+function getUserLocation() {
+  if (!currentUser) return null;
+  const perms = ROLE_PERMS[currentUser.role] || ROLE_PERMS.viewer;
+  if (!perms.locationScoped) return null;
+  return { building: currentUser.assignedBuilding || null, section: currentUser.assignedSection || null };
+}
+
+function loadUsers() {
+  try {
+    const s = localStorage.getItem(USERS_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  // Default users
+  return [
+    { id:1, username:'admin',    password:'admin123',  role:'admin',    created:'2025-01-01', assignedBuilding:'', assignedSection:'' },
+    { id:2, username:'engineer1',password:'eng123',    role:'engineer', created:'2025-01-01', assignedBuilding:'', assignedSection:'' },
+    { id:3, username:'viewer1',  password:'view123',   role:'viewer',   created:'2025-01-01', assignedBuilding:'MAIN BUILDING', assignedSection:'' },
+    { id:4, username:'viewer2',  password:'view456',   role:'viewer',   created:'2025-01-01', assignedBuilding:'DIAGNOSTIC BUILDING', assignedSection:'LAB-1' },
+  ];
+}
+
+function saveUsers() {
+  localStorage.setItem(USERS_KEY, JSON.stringify(users));
+}
+
+let users = loadUsers();
+let currentUser = null;
+
+function loadSession() {
+  try {
+    const s = localStorage.getItem(SESSION_KEY);
+    if (s) return JSON.parse(s);
+  } catch(e) {}
+  return null;
+}
+
+function saveSession(user) {
+  localStorage.setItem(SESSION_KEY, JSON.stringify({
+    username: user.username, role: user.role,
+    assignedBuilding: user.assignedBuilding || '',
+    assignedSection:  user.assignedSection  || ''
+  }));
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+// ── LOGIN ──────────────────────────────────────────────────────
+function doLogin() {
+  const uname = document.getElementById('loginUser').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  const err   = document.getElementById('loginError');
+
+  if (!uname || !pass) { err.textContent = 'Please enter username and password.'; return; }
+
+  const user = users.find(u => u.username === uname && u.password === pass);
+  if (!user) { err.textContent = '✗ Invalid username or password.'; return; }
+
+  currentUser = user;
+  saveSession(user);
+  err.textContent = '';
+  applyRoleUI();
+  document.getElementById('authScreen').classList.add('hidden');
+  setTimeout(() => { document.getElementById('authScreen').style.display = 'none'; }, 400);
+  renderAll();
+  showToast(`✓ Welcome, ${user.username}! (${user.role})`);
+}
+
+document.getElementById('loginPass').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+document.getElementById('loginUser').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('loginPass').focus();
+});
+
+// ── LOGOUT ─────────────────────────────────────────────────────
+function doLogout() {
+  if (!confirm('Sign out?')) return;
+  currentUser = null;
+  clearSession();
+  document.getElementById('authScreen').style.display = 'flex';
+  setTimeout(() => document.getElementById('authScreen').classList.remove('hidden'), 10);
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  document.getElementById('loginError').textContent = '';
+}
+
+// ── APPLY ROLE UI ──────────────────────────────────────────────
+function applyRoleUI() {
+  if (!currentUser) return;
+  const role  = currentUser.role;
+  const perms = ROLE_PERMS[role] || ROLE_PERMS.viewer;
+
+  // Role badge
+  const badge = document.getElementById('roleBadge');
+  badge.className = 'role-badge role-' + role;
+  badge.textContent = role.charAt(0).toUpperCase() + role.slice(1);
+  document.getElementById('currentUserName').textContent = currentUser.username;
+
+  // Header buttons — show by role, NOT by canImport flag
+  const engBtns  = document.getElementById('hdrEngButtons');
+  const viewBtns = document.getElementById('hdrViewerButtons');
+  const mgmtBtn  = document.getElementById('userMgmtBtn');
+  const addBtn   = document.getElementById('addEquipBtn');
+
+  if (role === 'admin' || role === 'engineer') {
+    engBtns.style.display  = 'flex';
+    viewBtns.style.display = 'none';
+  } else {
+    // Viewer: show viewer buttons (which now include Upload Excel)
+    engBtns.style.display  = 'none';
+    viewBtns.style.display = 'flex';
+  }
+
+  mgmtBtn.style.display = perms.canManageUsers ? 'inline-flex' : 'none';
+
+  // Add button: only show for viewers IF they have an assigned building
+  if (perms.locationScoped) {
+    addBtn.style.display = currentUser.assignedBuilding ? 'inline-flex' : 'none';
+  } else {
+    addBtn.style.display = perms.canAdd ? 'inline-flex' : 'none';
+  }
+
+  // Location banner for viewers
+  let locBanner = document.getElementById('viewerLocBanner');
+  if (!locBanner) {
+    locBanner = document.createElement('div');
+    locBanner.id = 'viewerLocBanner';
+    locBanner.style.cssText = 'display:none;align-items:center;gap:6px;padding:4px 12px;background:#ede9fe;border:1px solid #c4b5fd;border-radius:20px;font-size:11px;font-weight:700;color:#7c3aed';
+    document.querySelector('.header-right').insertBefore(locBanner, document.getElementById('roleBadge').parentElement);
+  }
+  if (perms.locationScoped) {
+    if (currentUser.assignedBuilding) {
+      const sec = currentUser.assignedSection ? ' / ' + currentUser.assignedSection : '';
+      locBanner.innerHTML = `📍 ${currentUser.assignedBuilding}${sec}`;
+      locBanner.style.cssText = locBanner.style.cssText.replace('background:#ede9fe','background:#ede9fe');
+    } else {
+      locBanner.innerHTML = `⚠️ No location assigned — contact Admin`;
+      locBanner.style.cssText = 'display:flex;align-items:center;gap:6px;padding:4px 12px;background:#fee2e2;border:1px solid #fca5a5;border-radius:20px;font-size:11px;font-weight:700;color:#dc2626';
+    }
+    locBanner.style.display = 'flex';
+  } else {
+    locBanner.style.display = 'none';
+  }
+
+  // Re-render table so lock icons update immediately
+  if (typeof renderTable === 'function') renderTable();
+}
+
+// ── PERMISSION CHECK ───────────────────────────────────────────
+function canEditUI(item)   {
+  if (!currentUser) return false;
+  const perms = ROLE_PERMS[currentUser.role] || ROLE_PERMS.viewer;
+  if (!perms.canEdit) return false;
+  if (item && perms.locationScoped) return canActOn(item);
+  return true;
+}
+function canDeleteUI(item) {
+  if (!currentUser) return false;
+  const perms = ROLE_PERMS[currentUser.role] || ROLE_PERMS.viewer;
+  if (!perms.canDelete) return false;
+  if (item && perms.locationScoped) return canActOn(item);
+  return true;
+}
+
+function requirePerm(perm) {
+  if (!currentUser) { showToast('⚠ Please log in first'); return false; }
+  const role = currentUser.role || 'viewer';
+  const perms = ROLE_PERMS[role] || ROLE_PERMS.viewer;
+  if (!perms[perm]) {
+    showToast('⛔ Access denied — your role (' + role + ') cannot perform this action');
+    return false;
+  }
+  return true;
+}
+
+// ── USER MANAGEMENT ────────────────────────────────────────────
+function openUserMgmt() {
+  if (!requirePerm('canManageUsers')) return;
+  renderUsersTable();
+  document.getElementById('userMgmtOverlay').classList.add('open');
+}
+
+function closeUserMgmt() {
+  document.getElementById('userMgmtOverlay').classList.remove('open');
+}
+
+document.getElementById('userMgmtOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('userMgmtOverlay')) closeUserMgmt();
+});
+
+function renderUsersTable() {
+  const PERM_DESC = {
+    admin:    'Full access · Manage Users',
+    engineer: 'View · Add · Edit · Delete · Import/Export',
+    viewer:   'View all · Edit own location only',
+  };
+  document.getElementById('usersBody').innerHTML = users.map((u, i) => {
+    const locLabel = u.role === 'viewer'
+      ? (u.assignedBuilding
+          ? `<span style="color:#7c3aed;font-weight:600">${u.assignedBuilding}${u.assignedSection ? ' / ' + u.assignedSection : ''}</span>`
+          : '<span style="color:var(--text3)">All locations</span>')
+      : '<span style="color:var(--text3)">—</span>';
+    return `
+    <tr>
+      <td style="color:var(--text3);font-size:12px">${i+1}</td>
+      <td style="font-weight:600">${u.username} ${u.username === currentUser.username ? '<span style="font-size:10px;color:var(--accent)">(you)</span>' : ''}</td>
+      <td>
+        <select class="role-sel" onchange="changeUserRole(${u.id}, this.value)" ${u.username === 'admin' ? 'disabled' : ''}>
+          <option value="viewer"   ${u.role==='viewer'   ?'selected':''}>Viewer</option>
+          <option value="engineer" ${u.role==='engineer' ?'selected':''}>Engineer</option>
+          <option value="admin"    ${u.role==='admin'    ?'selected':''}>Admin</option>
+        </select>
+      </td>
+      <td style="font-size:12px">${locLabel}
+        ${u.role === 'viewer' ? `<button onclick="editUserLocation(${u.id})" style="margin-left:6px;font-size:10px;padding:2px 7px;border:1px solid #7c3aed;border-radius:4px;color:#7c3aed;background:transparent;cursor:pointer">✏ Edit</button>` : ''}
+      </td>
+      <td style="font-size:11px;color:var(--text3)">${PERM_DESC[u.role]||''}</td>
+      <td>
+        ${u.username === 'admin' ? '<span style="font-size:11px;color:var(--text3)">Protected</span>' :
+          u.username === currentUser.username ? '<span style="font-size:11px;color:var(--text3)">Current</span>' :
+          `<button class="icon-btn del" onclick="deleteUser(${u.id})" title="Remove user">✕</button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function editUserLocation(id) {
+  const u = users.find(x => x.id === id);
+  if (!u || u.role !== 'viewer') return;
+  const buildings = ['','MAIN BUILDING','ANNEX I BUILDING','ANNEX II BUILDING','DIAGNOSTIC BUILDING'];
+  const bldg = prompt(
+    `Assign Building for "${u.username}":\n(${buildings.slice(1).join(' | ')})\nLeave blank = all buildings`,
+    u.assignedBuilding || ''
+  );
+  if (bldg === null) return;
+  const sec = prompt(
+    `Assign Section for "${u.username}" (optional):\nLeave blank = all sections in building`,
+    u.assignedSection || ''
+  );
+  if (sec === null) return;
+  u.assignedBuilding = bldg.trim();
+  u.assignedSection  = sec.trim();
+  saveUsers();
+  renderUsersTable();
+  showToast(`✓ Location updated for ${u.username}`);
+}
+
+function toggleLocationFields() {
+  const role = document.getElementById('nu_role').value;
+  const locRow    = document.getElementById('nu_location_row');
+  const noLocRow  = document.getElementById('nu_nolocation_row');
+  if (role === 'viewer') {
+    locRow.style.display   = 'grid';
+    noLocRow.style.display = 'none';
+  } else {
+    locRow.style.display   = 'none';
+    noLocRow.style.display = 'block';
+  }
+}
+// Init on load
+document.addEventListener('DOMContentLoaded', toggleLocationFields);
+
+function addUser() {
+  const uname    = document.getElementById('nu_user').value.trim();
+  const pass     = document.getElementById('nu_pass').value;
+  const role     = document.getElementById('nu_role').value;
+  const building = role === 'viewer' ? (document.getElementById('nu_building').value || '') : '';
+  const section  = role === 'viewer' ? (document.getElementById('nu_section').value.trim() || '') : '';
+
+  if (!uname) { showToast('⚠ Enter a username'); return; }
+  if (pass.length < 6) { showToast('⚠ Password must be at least 6 characters'); return; }
+  if (users.find(u => u.username === uname)) { showToast('⚠ Username already exists'); return; }
+
+  users.push({
+    id: Date.now(), username: uname, password: pass, role,
+    assignedBuilding: building, assignedSection: section,
+    created: new Date().toISOString().slice(0,10)
+  });
+  saveUsers();
+  renderUsersTable();
+  document.getElementById('nu_user').value    = '';
+  document.getElementById('nu_pass').value    = '';
+  document.getElementById('nu_building').value = '';
+  document.getElementById('nu_section').value  = '';
+  const locInfo = role === 'viewer' ? ` · ${building || 'All Buildings'}${section ? ' / '+section : ''}` : '';
+  showToast(`✓ User "${uname}" added as ${role}${locInfo}`);
+}
+
+function changeUserRole(id, newRole) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  u.role = newRole;
+  saveUsers();
+  renderUsersTable();
+  showToast(`✓ ${u.username} role changed to ${newRole}`);
+}
+
+function deleteUser(id) {
+  const u = users.find(x => x.id === id);
+  if (!u) return;
+  if (!confirm(`Remove user "${u.username}"?`)) return;
+  users = users.filter(x => x.id !== id);
+  saveUsers();
+  renderUsersTable();
+  showToast(`🗑 User "${u.username}" removed`);
+}
+
+// Permission checks are handled inside each function directly
+
+// ── AUTO-LOGIN FROM SESSION ────────────────────────────────────
+(function init() {
+  const session = loadSession();
+  if (session) {
+    const user = users.find(u => u.username === session.username && u.role === session.role);
+    if (user) {
+      // Restore location from session in case user obj changed
+      user.assignedBuilding = session.assignedBuilding || user.assignedBuilding || '';
+      user.assignedSection  = session.assignedSection  || user.assignedSection  || '';
+      currentUser = user;
+      applyRoleUI();
+      document.getElementById('authScreen').style.display = 'none';
+      renderAll();
+      return;
+    }
+  }
+  // No valid session — show login screen
+  document.getElementById('authScreen').style.display = 'flex';
+  document.getElementById('authScreen').classList.remove('hidden');
+})();
+
+// Only render if already logged in via session (handled in init above)
+// renderAll() is called inside doLogin() and init() when session exists
+</script>
+</body>
+</html>
